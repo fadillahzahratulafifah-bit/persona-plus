@@ -27,7 +27,7 @@ const MOCK_COSTUMES: Costume[] = [
     size: "M",
     price: "Rp 150.000",
     stock: 2,
-    image: "/assets/11.png",
+    image: "/assets/11.webp",
     description: "Kostum lengkap Raiden Shogun termasuk aksesoris rambut, baju, obi, dan stocking. Wig disewakan terpisah.",
     vendorName: "Sakura Cosplay"
   },
@@ -41,7 +41,7 @@ const MOCK_COSTUMES: Costume[] = [
     size: "L",
     price: "Rp 120.000",
     stock: 1,
-    image: "/assets/12.png",
+    image: "/assets/12.webp",
     description: "Baju Miku lengkap dengan dasi dan aksesoris lengan.",
     vendorName: "Sakura Cosplay"
   },
@@ -55,7 +55,7 @@ const MOCK_COSTUMES: Costume[] = [
     size: "XL",
     price: "Rp 100.000",
     stock: 3,
-    image: "/assets/13.png",
+    image: "/assets/13.webp",
     description: "Seragam Jujutsu High lengkap dengan kacamata hitam/penutup mata.",
     vendorName: "Sakura Cosplay"
   },
@@ -69,7 +69,7 @@ const MOCK_COSTUMES: Costume[] = [
     size: "S",
     price: "Rp 130.000",
     stock: 1,
-    image: "/assets/14.png",
+    image: "/assets/14.webp",
     description: "Dress hitam Thorn Princess lengkap dengan senjata replika.",
     vendorName: "Sakura Cosplay"
   }

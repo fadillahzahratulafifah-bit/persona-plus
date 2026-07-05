@@ -23,11 +23,11 @@ export default function VendorSidebar() {
         <Link href="/" className="relative flex items-center">
           {/* Light Mode Logo */}
           <div className="dark:hidden">
-            <Image src="/images/LOGO.png" alt="Persona+ Logo" width={120} height={40} className="h-8 w-auto object-contain" />
+            <Image src="/images/LOGO.webp" alt="Persona+ Logo" width={120} height={40} className="h-8 w-auto object-contain" />
           </div>
           {/* Dark Mode Logo */}
           <div className="hidden dark:block">
-            <Image src="/images/Logo White.png" alt="Persona+ Logo" width={120} height={40} className="h-8 w-auto object-contain" />
+            <Image src="/images/Logo White.webp" alt="Persona+ Logo" width={120} height={40} className="h-8 w-auto object-contain" />
           </div>
         </Link>
         <div className="flex items-center gap-2 mt-4 text-primary">

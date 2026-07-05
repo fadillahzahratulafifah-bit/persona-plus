@@ -47,10 +47,10 @@ export default function RegisterPage() {
         <div className="flex justify-center mb-8">
           <Link href="/">
             <div className="dark:hidden">
-              <Image src="/images/LOGO.png" alt="Persona+" width={180} height={60} className="h-16 w-auto" />
+              <Image src="/images/LOGO.webp" alt="Persona+" width={180} height={60} className="h-16 w-auto" />
             </div>
             <div className="hidden dark:block">
-              <Image src="/images/Logo White.png" alt="Persona+" width={180} height={60} className="h-16 w-auto" />
+              <Image src="/images/Logo White.webp" alt="Persona+" width={180} height={60} className="h-16 w-auto" />
             </div>
           </Link>
         </div>

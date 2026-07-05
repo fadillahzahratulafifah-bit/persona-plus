@@ -152,7 +152,7 @@ const CATEGORIES = [
 const VENDORS = [
   {
     name: "KL Makeup Studio",
-    image: "/assets/KL.Makeup Wisuda.png",
+    image: "/assets/KL.Makeup Wisuda.webp",
     rating: "4.9",
     location: "Jakarta Selatan",
     category: "Makeup Wisuda & Wedding",
@@ -160,7 +160,7 @@ const VENDORS = [
   },
   {
     name: "Sakura Cosplay",
-    image: "/assets/KL.Sewa Kostum.png",
+    image: "/assets/KL.Sewa Kostum.webp",
     rating: "4.8",
     location: "Bandung",
     category: "Sewa Kostum Anime",
@@ -168,7 +168,7 @@ const VENDORS = [
   },
   {
     name: "Disney Dreams",
-    image: "/assets/KLMakeup Disney.png",
+    image: "/assets/KLMakeup Disney.webp",
     rating: "5.0",
     location: "Tangerang",
     category: "Makeup Karakter",
@@ -176,7 +176,7 @@ const VENDORS = [
   },
   {
     name: "K-Style Beauty",
-    image: "/assets/KL.Makeup K-Pop.png",
+    image: "/assets/KL.Makeup K-Pop.webp",
     rating: "4.7",
     location: "Jakarta Barat",
     category: "Makeup K-Pop",

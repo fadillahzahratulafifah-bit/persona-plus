@@ -35,8 +35,8 @@ const MOCK_VENDORS: Vendor[] = [
     id: "v1",
     name: "KL Makeup Studio",
     slug: "kl-makeup-studio",
-    image: "/assets/KL.Makeup Wisuda.png",
-    coverImage: "/assets/backround.png",
+    image: "/assets/KL.Makeup Wisuda.webp",
+    coverImage: "/assets/backround.webp",
     rating: "4.9",
     reviewsCount: 124,
     location: "Jakarta Selatan",
@@ -48,16 +48,16 @@ const MOCK_VENDORS: Vendor[] = [
       { id: "s2", name: "Makeup Wedding", price: "Rp 1.500.000", description: "Paket lengkap untuk pengantin." }
     ],
     portfolios: [
-      { id: "p1", image: "/assets/KL.Makeup Wisuda.png", title: "Wisuda Look" },
-      { id: "p2", image: "/assets/Detail Vendor.png", title: "Wedding Look" }
+      { id: "p1", image: "/assets/KL.Makeup Wisuda.webp", title: "Wisuda Look" },
+      { id: "p2", image: "/assets/Detail Vendor.webp", title: "Wedding Look" }
     ]
   },
   {
     id: "v2",
     name: "Sakura Cosplay",
     slug: "sakura-cosplay",
-    image: "/assets/KL.Sewa Kostum.png",
-    coverImage: "/assets/Spanduk Usaha Laundry Ilustratif Ceria Biru.png",
+    image: "/assets/KL.Sewa Kostum.webp",
+    coverImage: "/assets/Spanduk Usaha Laundry Ilustratif Ceria Biru.webp",
     rating: "4.8",
     reviewsCount: 89,
     location: "Bandung",
@@ -68,15 +68,15 @@ const MOCK_VENDORS: Vendor[] = [
       { id: "s3", name: "Sewa Kostum Harian", price: "Rp 150.000", description: "Sewa kostum untuk 24 jam." }
     ],
     portfolios: [
-      { id: "p3", image: "/assets/KL.Sewa Kostum.png", title: "Genshin Impact" }
+      { id: "p3", image: "/assets/KL.Sewa Kostum.webp", title: "Genshin Impact" }
     ]
   },
   {
     id: "v3",
     name: "Disney Dreams",
     slug: "disney-dreams",
-    image: "/assets/KLMakeup Disney.png",
-    coverImage: "/assets/Spanduk Usaha Laundry Ilustratif Ceria Biru (1).png",
+    image: "/assets/KLMakeup Disney.webp",
+    coverImage: "/assets/Spanduk Usaha Laundry Ilustratif Ceria Biru (1).webp",
     rating: "5.0",
     reviewsCount: 42,
     location: "Tangerang",
@@ -87,15 +87,15 @@ const MOCK_VENDORS: Vendor[] = [
       { id: "s4", name: "Disney Princess Makeup", price: "Rp 500.000", description: "Full face karakter." }
     ],
     portfolios: [
-      { id: "p4", image: "/assets/KLMakeup Disney.png", title: "Cinderella" }
+      { id: "p4", image: "/assets/KLMakeup Disney.webp", title: "Cinderella" }
     ]
   },
   {
     id: "v4",
     name: "K-Style Beauty",
     slug: "k-style-beauty",
-    image: "/assets/KL.Makeup K-Pop.png",
-    coverImage: "/assets/Spanduk Usaha Laundry Ilustratif Ceria Biru (2).png",
+    image: "/assets/KL.Makeup K-Pop.webp",
+    coverImage: "/assets/Spanduk Usaha Laundry Ilustratif Ceria Biru (2).webp",
     rating: "4.7",
     reviewsCount: 156,
     location: "Jakarta Barat",
@@ -106,7 +106,7 @@ const MOCK_VENDORS: Vendor[] = [
       { id: "s5", name: "Idol Look", price: "Rp 300.000", description: "Makeup ala K-Pop Idol." }
     ],
     portfolios: [
-      { id: "p5", image: "/assets/KL.Makeup K-Pop.png", title: "K-Pop Stage Look" }
+      { id: "p5", image: "/assets/KL.Makeup K-Pop.webp", title: "K-Pop Stage Look" }
     ]
   }
 ];

@@ -17,8 +17,6 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [pendingImage, setPendingImage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const prevMsgCount = useRef<number>(0);
-
   useEffect(() => {
     if (user) {
       ChatService.getUserChats(user.id).then(res => {
@@ -28,13 +26,6 @@ export default function ChatPage() {
     }
   }, [user]);
 
-  // Only auto-scroll when new messages arrive, not on typing
-  useEffect(() => {
-    if (messages.length > prevMsgCount.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-    prevMsgCount.current = messages.length;
-  }, [messages]);
 
   useEffect(() => {
     if (!activeRoom) return;
@@ -71,18 +62,18 @@ export default function ChatPage() {
   );
 
   return (
-    <div className="bg-card rounded-3xl border shadow-sm overflow-hidden" style={{ height: 'calc(100vh - 220px)', minHeight: '500px' }}>
-      <div className="flex h-full">
+    <div className="bg-card rounded-3xl border shadow-sm overflow-hidden flex flex-col md:min-h-[500px]" style={{ height: 'calc(100vh - 120px)' }}>
+      <div className="flex h-full flex-col md:flex-row">
         {/* Left: Room List */}
-        <div className="w-80 border-r flex flex-col bg-muted/10 shrink-0">
-          <div className="p-4 border-b">
-            <h2 className="font-bold text-lg font-heading mb-3">Pesan</h2>
+        <div className="md:w-80 border-b md:border-b-0 md:border-r flex flex-col bg-muted/10 shrink-0 h-1/3 md:h-full">
+          <div className="p-3 md:p-4 border-b">
+            <h2 className="font-bold text-base md:text-lg font-heading mb-2 md:mb-3">Pesan</h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Cari percakapan..."
-                className="w-full pl-9 pr-4 py-2 rounded-full border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                placeholder="Cari pesan..."
+                className="w-full pl-9 pr-4 py-2 bg-background border rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
           </div>
@@ -125,11 +116,11 @@ export default function ChatPage() {
         </div>
 
         {/* Right: Chat Window */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col h-2/3 md:h-full">
           {activeRoom ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b flex items-center gap-3 bg-card">
+              <div className="p-3 md:p-4 border-b bg-card flex items-center gap-3 shrink-0">
                 <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
                   {getPartnerName(activeRoom)[0].toUpperCase()}
                 </div>

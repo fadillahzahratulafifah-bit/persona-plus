@@ -27,7 +27,6 @@ export default function AdminPage() {
   const [replyMsg, setReplyMsg] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
   const supportEndRef = useRef<HTMLDivElement>(null);
-  const prevSupportCount = useRef<number>(0);
 
   useEffect(() => {
     if (loadingAuth) return;
@@ -59,14 +58,6 @@ export default function AdminPage() {
       });
     }
   }, [tab, user]);
-
-  // Auto scroll support chat
-  useEffect(() => {
-    if (supportMessages.length > prevSupportCount.current) {
-      supportEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-    prevSupportCount.current = supportMessages.length;
-  }, [supportMessages]);
 
   // Listen to active support room
   useEffect(() => {
@@ -145,10 +136,10 @@ export default function AdminPage() {
 
         {/* Support Chat Tab */}
         {tab === 'support' && (
-          <div className="bg-card border rounded-2xl overflow-hidden shadow-sm" style={{ height: '600px' }}>
-            <div className="flex h-full">
+          <div className="bg-card border rounded-2xl overflow-hidden shadow-sm flex flex-col md:min-h-[600px]" style={{ height: 'calc(100vh - 200px)' }}>
+            <div className="flex h-full flex-col md:flex-row">
               {/* Room list */}
-              <div className="w-72 border-r flex flex-col bg-muted/10 shrink-0">
+              <div className="md:w-72 border-b md:border-b-0 md:border-r flex flex-col bg-muted/10 shrink-0 h-1/3 md:h-full">
                 <div className="p-4 border-b">
                   <h3 className="font-bold text-base">Percakapan Support</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">{supportRooms.length} percakapan</p>
@@ -175,10 +166,10 @@ export default function AdminPage() {
                 </div>
               </div>
               {/* Chat area */}
-              <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex flex-col h-2/3 md:h-full">
                 {activeSupportRoom ? (
                   <>
-                    <div className="p-4 border-b bg-muted/20 flex items-center gap-3">
+                    <div className="p-3 md:p-4 border-b bg-muted/20 flex items-center gap-3 shrink-0">
                       <MessageCircle className="w-5 h-5 text-primary" />
                       <p className="font-semibold">
                         {activeSupportRoom.participantNames?.[activeSupportRoom.participants.find(p => p !== user!.id) || ""] || "Pengguna"}

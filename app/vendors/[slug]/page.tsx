@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import { DbService, VendorServiceItem } from "@/services/db.service";
 import { ChatService } from "@/services/chat.service";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { Star, MapPin, CheckCircle, Heart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CldImage } from "next-cloudinary";
@@ -18,6 +20,7 @@ export default function VendorDetailPage({ params: paramsPromise }: { params: Pr
   
   const [vendor, setVendor] = useState<any>(null);
   const [services, setServices] = useState<VendorServiceItem[]>([]);
+  const [portfolios, setPortfolios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creatingChat, setCreatingChat] = useState(false);
@@ -28,9 +31,10 @@ export default function VendorDetailPage({ params: paramsPromise }: { params: Pr
       if (res.success && res.data) {
         setVendor(res.data);
         const svcRes = await DbService.getVendorServices(params.slug);
-        if (svcRes.success) {
-          setServices(svcRes.data);
-        }
+        if (svcRes.success) setServices(svcRes.data);
+        // Fetch portfolio from portfolios collection
+        const portSnap = await getDocs(query(collection(db, "portfolios"), where("vendorId", "==", params.slug)));
+        setPortfolios(portSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       } else {
         setError(res.error || "Vendor tidak ditemukan");
       }
@@ -198,16 +202,24 @@ export default function VendorDetailPage({ params: paramsPromise }: { params: Pr
         {/* Portfolio Section */}
         <div className="mt-12">
           <h2 className="text-2xl font-bold font-heading mb-6">Portofolio</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {(vendor.portfolios || []).map((port: any) => (
-              <div key={port.id} className="relative aspect-square rounded-2xl overflow-hidden group cursor-pointer border">
-                <Image src={port.image} alt={port.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                  <p className="text-white font-medium text-sm">{port.title}</p>
+          {portfolios.length === 0 ? (
+            <div className="border border-dashed rounded-2xl p-12 text-center text-muted-foreground">
+              <p className="font-medium">Vendor belum menambahkan portofolio.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {portfolios.map((port: any) => (
+                <div key={port.id} className="relative aspect-square rounded-2xl overflow-hidden group cursor-pointer border">
+                  <img src={port.imageUrl} alt={port.caption || 'Portofolio'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  {port.caption && (
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                      <p className="text-white font-medium text-sm">{port.caption}</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>

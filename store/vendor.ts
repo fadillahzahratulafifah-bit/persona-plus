@@ -6,6 +6,7 @@ export interface VendorServiceItem {
   name: string;
   description: string;
   price: string;
+  imageUrl?: string;
 }
 
 interface VendorState {

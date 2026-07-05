@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useVendorStore } from "@/store/vendor";
 import { Button } from "@/components/ui/button";
-import { Plus, X, Trash2 } from "lucide-react";
+import { Plus, X, Trash2, Image as ImageIcon, UploadCloud } from "lucide-react";
+import { CldUploadWidget, CldImage } from "next-cloudinary";
 
 export default function ServicesManagementPage() {
   const { services, addService, deleteService } = useVendorStore();
@@ -11,6 +12,7 @@ export default function ServicesManagementPage() {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [price, setPrice] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,11 +21,12 @@ export default function ServicesManagementPage() {
     // Auto format price if they just typed numbers
     const formattedPrice = price.startsWith("Rp") ? price : `Rp ${parseInt(price.replace(/[^0-9]/g, "") || "0").toLocaleString('id-ID')}`;
     
-    addService({ name, description: desc, price: formattedPrice });
+    addService({ name, description: desc, price: formattedPrice, imageUrl });
     setIsAdding(false);
     setName("");
     setDesc("");
     setPrice("");
+    setImageUrl("");
   };
 
   return (
@@ -71,6 +74,20 @@ export default function ServicesManagementPage() {
               />
             </div>
             <div className="flex justify-end gap-3 pt-2">
+              <CldUploadWidget 
+                uploadPreset="ml_default" // Use your actual upload preset if you have one, or configure unsigned uploads
+                onSuccess={(result: any) => {
+                  setImageUrl(result.info.secure_url);
+                }}
+              >
+                {({ open }) => (
+                  <Button type="button" variant="secondary" onClick={() => open()} className="mr-auto">
+                    <UploadCloud className="w-4 h-4 mr-2" /> 
+                    {imageUrl ? "Ganti Foto" : "Unggah Foto"}
+                  </Button>
+                )}
+              </CldUploadWidget>
+
               <Button type="button" variant="outline" onClick={() => setIsAdding(false)}>Batal</Button>
               <Button type="submit">Simpan Layanan</Button>
             </div>
@@ -80,9 +97,19 @@ export default function ServicesManagementPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {services.map(svc => (
-          <div key={svc.id} className="bg-card border rounded-2xl p-6 hover:shadow-md transition-shadow flex flex-col">
+          <div key={svc.id} className="bg-card border rounded-2xl p-6 hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+            {svc.imageUrl ? (
+              <div className="w-full h-40 mb-4 rounded-xl overflow-hidden relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={svc.imageUrl} alt={svc.name} className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="w-full h-40 mb-4 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+                <ImageIcon className="w-8 h-8 opacity-20" />
+              </div>
+            )}
             <h3 className="font-bold text-lg mb-2">{svc.name}</h3>
-            <p className="text-sm text-muted-foreground mb-4">{svc.description}</p>
+            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{svc.description}</p>
             <div className="flex justify-between items-end mt-auto pt-4 border-t border-dashed">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Harga</p>

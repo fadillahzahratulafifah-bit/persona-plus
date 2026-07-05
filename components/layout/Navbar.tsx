@@ -79,12 +79,16 @@ export default function Navbar() {
             />
           </div>
           <ThemeToggle />
-          <Link href="/dashboard/wishlist">
-            <Button variant="ghost" size="icon" className="text-foreground/80 hover:text-primary"><Heart className="h-5 w-5" /></Button>
-          </Link>
-          <Link href="/dashboard/booking">
-            <Button variant="ghost" size="icon" className="text-foreground/80 hover:text-primary"><CalendarClock className="h-5 w-5" /></Button>
-          </Link>
+          {user && (
+            <>
+              <Link href="/dashboard/wishlist">
+                <Button variant="ghost" size="icon" className="text-foreground/80 hover:text-primary"><Heart className="h-5 w-5" /></Button>
+              </Link>
+              <Link href="/dashboard/booking">
+                <Button variant="ghost" size="icon" className="text-foreground/80 hover:text-primary"><CalendarClock className="h-5 w-5" /></Button>
+              </Link>
+            </>
+          )}
           <div className="border-l pl-3 ml-1">
             {user ? (
               <Link href={user.role === 'vendor' ? '/vendor-dashboard' : '/dashboard'}>

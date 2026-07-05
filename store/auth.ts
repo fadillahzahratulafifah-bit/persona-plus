@@ -40,7 +40,11 @@ export const useAuthStore = create<AuthState>()((set) => ({
       const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
       
       if (userDoc.exists()) {
-        const userData = userDoc.data() as User;
+        const userData = userDoc.data() as User & { suspended?: boolean };
+        if (userData.suspended) {
+          await firebaseSignOut(auth);
+          throw new Error("Akun Anda telah disuspend oleh Admin. Silakan hubungi support.");
+        }
         set({ user: userData });
         return userData;
       } else {
@@ -68,7 +72,11 @@ export const useAuthStore = create<AuthState>()((set) => ({
       const userDoc = await getDoc(doc(db, 'users', uid));
       
       if (userDoc.exists()) {
-        const userData = userDoc.data() as User;
+        const userData = userDoc.data() as User & { suspended?: boolean };
+        if (userData.suspended) {
+          await firebaseSignOut(auth);
+          throw new Error("Akun Anda telah disuspend oleh Admin. Silakan hubungi support.");
+        }
         set({ user: userData });
         return userData;
       } else {
@@ -120,7 +128,13 @@ if (typeof window !== 'undefined') {
       try {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
-          useAuthStore.getState().setUser(userDoc.data() as User);
+          const userData = userDoc.data() as User & { suspended?: boolean };
+          if (userData.suspended) {
+            await firebaseSignOut(auth);
+            useAuthStore.getState().setUser(null);
+            return;
+          }
+          useAuthStore.getState().setUser(userData);
         } else {
           useAuthStore.getState().setUser({
             id: firebaseUser.uid,

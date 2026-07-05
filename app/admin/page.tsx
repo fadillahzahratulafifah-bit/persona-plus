@@ -55,6 +55,12 @@ export default function AdminPage() {
     setAccounts(prev => prev.map(a => a.id === userId ? { ...a, suspended: !suspended } : a));
   };
 
+  const handleUpdateRole = async (userId: string, newRole: string) => {
+    if (!confirm(`Ubah role pengguna ini menjadi ${newRole}?`)) return;
+    await updateDoc(doc(db, "users", userId), { role: newRole });
+    setAccounts(prev => prev.map(a => a.id === userId ? { ...a, role: newRole } : a));
+  };
+
   // Load support chats when tab switches
   useEffect(() => {
     if (tab === 'support' && user) {
@@ -296,11 +302,23 @@ export default function AdminPage() {
                       <td className="px-6 py-4 font-medium">{acc.name}</td>
                       <td className="px-6 py-4 text-muted-foreground">{acc.email}</td>
                       <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                          acc.role === 'vendor' ? 'bg-success/10 text-success' :
-                          acc.role === 'admin' ? 'bg-primary/10 text-primary' :
-                          'bg-muted text-muted-foreground'
-                        }`}>{acc.role}</span>
+                        {acc.id === user?.id ? (
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                            acc.role === 'vendor' ? 'bg-success/10 text-success' :
+                            acc.role === 'admin' ? 'bg-primary/10 text-primary' :
+                            'bg-muted text-muted-foreground'
+                          }`}>{acc.role}</span>
+                        ) : (
+                          <select 
+                            value={acc.role || 'customer'}
+                            onChange={(e) => handleUpdateRole(acc.id, e.target.value)}
+                            className="bg-card border rounded-md px-2 py-1 text-xs outline-none focus:border-primary cursor-pointer"
+                          >
+                            <option value="customer">Customer</option>
+                            <option value="vendor">Vendor</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         {acc.suspended ? (

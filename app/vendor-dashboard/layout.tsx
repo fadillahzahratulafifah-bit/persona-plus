@@ -6,18 +6,26 @@ import { useAuthStore } from "@/store/auth";
 import { useEffect, useState } from "react";
 import { OrderService } from "@/services/order.service";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function VendorDashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = useAuthStore(state => state.user);
+  const { user, loadingAuth } = useAuthStore();
   const [pendingCount, setPendingCount] = useState(0);
   const [showNotif, setShowNotif] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    if (user) {
+    if (!loadingAuth && (!user || user.role !== 'vendor')) {
+      router.push("/login");
+    }
+  }, [user, loadingAuth, router]);
+
+  useEffect(() => {
+    if (user && user.role === 'vendor') {
       OrderService.getVendorOrders(user.id).then(res => {
         if (res.success) {
           setPendingCount(res.data.filter(o => o.status === 'pending').length);
@@ -25,6 +33,14 @@ export default function VendorDashboardLayout({
       });
     }
   }, [user]);
+
+  if (loadingAuth || !user || user.role !== 'vendor') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted/30">

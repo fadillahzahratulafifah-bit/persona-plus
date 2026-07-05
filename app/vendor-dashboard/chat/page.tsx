@@ -3,8 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/auth";
 import { ChatService, ChatRoom, ChatMessage } from "@/services/chat.service";
-import { Send, MessageSquare, Search } from "lucide-react";
+import { Send, MessageSquare, Search, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CldUploadWidget } from "next-cloudinary";
 
 export default function VendorChatPage() {
   const user = useAuthStore(state => state.user);
@@ -14,6 +15,7 @@ export default function VendorChatPage() {
   const [newMsg, setNewMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [pendingImage, setPendingImage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMsgCount = useRef<number>(0);
 
@@ -48,11 +50,12 @@ export default function VendorChatPage() {
   };
 
   const handleSend = async () => {
-    if (!newMsg.trim() || !activeRoom || !user) return;
+    if ((!newMsg.trim() && !pendingImage) || !activeRoom || !user) return;
     setSending(true);
     const recipientId = activeRoom.participants.find(p => p !== user.id) || "";
-    await ChatService.sendMessage(activeRoom.id, user.id, user.name, newMsg.trim(), recipientId);
+    await ChatService.sendMessage(activeRoom.id, user.id, user.name, newMsg.trim(), recipientId, pendingImage || undefined);
     setNewMsg("");
+    setPendingImage("");
     setSending(false);
     ChatService.getUserChats(user.id).then(res => { if (res.success) setRooms(res.data); });
   };
@@ -136,7 +139,12 @@ export default function VendorChatPage() {
                   return (
                     <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md'}`}>
-                        <p>{msg.text}</p>
+                        {msg.imageUrl && (
+                          <a href={msg.imageUrl} target="_blank" rel="noopener noreferrer">
+                            <img src={msg.imageUrl} alt="Gambar" className="rounded-xl max-w-full mb-2 cursor-pointer hover:opacity-90 transition-opacity" style={{ maxHeight: '200px' }} />
+                          </a>
+                        )}
+                        {msg.text && <p>{msg.text}</p>}
                         <p className={`text-[10px] mt-1 ${isMe ? 'text-primary-foreground/70 text-right' : 'text-muted-foreground'}`}>
                           {new Date(msg.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                         </p>
@@ -147,8 +155,21 @@ export default function VendorChatPage() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="p-4 border-t bg-card">
-                <div className="flex gap-3 items-center">
+              <div className="p-4 border-t bg-card space-y-2">
+                {pendingImage && (
+                  <div className="relative inline-block">
+                    <img src={pendingImage} alt="Preview" className="h-20 rounded-xl border" />
+                    <button onClick={() => setPendingImage("")} className="absolute -top-2 -right-2 bg-destructive text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button>
+                  </div>
+                )}
+                <div className="flex gap-2 items-center">
+                  <CldUploadWidget uploadPreset="ml_default" onSuccess={(result: any) => setPendingImage(result.info.secure_url)}>
+                    {({ open }) => (
+                      <Button type="button" variant="outline" size="icon" className="rounded-full w-10 h-10 shrink-0" onClick={() => open()} title="Kirim gambar">
+                        <ImagePlus className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </CldUploadWidget>
                   <input
                     type="text"
                     value={newMsg}
@@ -157,7 +178,7 @@ export default function VendorChatPage() {
                     placeholder="Ketik balasan..."
                     className="flex-1 px-4 py-2.5 rounded-full border bg-muted focus:bg-background focus:ring-2 focus:ring-primary focus:outline-none text-sm"
                   />
-                  <Button onClick={handleSend} disabled={!newMsg.trim() || sending} size="icon" className="rounded-full w-10 h-10 shrink-0">
+                  <Button onClick={handleSend} disabled={(!newMsg.trim() && !pendingImage) || sending} size="icon" className="rounded-full w-10 h-10 shrink-0">
                     <Send className="w-4 h-4" />
                   </Button>
                 </div>

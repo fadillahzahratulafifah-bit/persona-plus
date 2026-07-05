@@ -10,6 +10,7 @@ export interface ChatMessage {
   senderId: string;
   senderName: string;
   text: string;
+  imageUrl?: string;
   createdAt: string;
   read: boolean;
 }
@@ -98,7 +99,8 @@ export class ChatService {
     senderId: string,
     senderName: string,
     text: string,
-    recipientId: string
+    recipientId: string,
+    imageUrl?: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const messageRef = collection(db, "chats", chatId, "messages");
@@ -106,14 +108,16 @@ export class ChatService {
         senderId,
         senderName,
         text,
+        ...(imageUrl ? { imageUrl } : {}),
         createdAt: new Date().toISOString(),
         read: false,
       };
       await addDoc(messageRef, newMsg);
 
       // Update chat room's lastMessage and unread count
+      const lastMsgPreview = imageUrl ? (text || '📷 Gambar') : text;
       await updateDoc(doc(db, "chats", chatId), {
-        lastMessage: text,
+        lastMessage: lastMsgPreview,
         lastMessageAt: new Date().toISOString(),
         [`unreadCount.${recipientId}`]: (await getDoc(doc(db, "chats", chatId))).data()?.unreadCount?.[recipientId] + 1 || 1,
       });

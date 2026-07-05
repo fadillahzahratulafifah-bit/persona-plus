@@ -26,15 +26,15 @@ export default function Home() {
         {/* Background Characters */}
         <div className="absolute inset-0 z-0 opacity-30 md:opacity-80 flex justify-center items-end">
           <Image 
-            src="/assets/no backround.webp" 
-            alt="Cosplay Characters" 
+            src="/assets/hero-banner.webp" 
+            alt="Persona+ Banner" 
             fill 
-            className="object-cover object-center md:object-contain md:object-bottom pointer-events-none" 
+            className="object-cover object-center pointer-events-none" 
             priority
           />
         </div>
         {/* Gradient overlay for readability */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-r from-background/70 via-background/40 to-transparent md:from-background/60 md:via-background/30 md:to-transparent" />
+        <div className="absolute inset-0 z-0 bg-gradient-to-r from-background/85 via-background/60 to-background/30 md:from-background/80 md:via-background/50 md:to-background/20" />
         
         <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center md:items-start text-center md:text-left py-16 md:py-24">
           {/* Badge */}

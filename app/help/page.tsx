@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Search, ChevronDown, MessageCircle, PhoneCall, Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, ChevronDown, MessageCircle, PhoneCall, Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/auth";
+import { ChatService } from "@/services/chat.service";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 const FAQ_DATA = [
   {
@@ -31,9 +36,33 @@ const FAQ_DATA = [
 export default function HelpCenterPage() {
   const [openIndex, setOpenIndex] = useState<string>("0-0");
   const [search, setSearch] = useState("");
+  const [startingChat, setStartingChat] = useState(false);
+  const user = useAuthStore(state => state.user);
+  const router = useRouter();
 
   const toggleAccordion = (id: string) => {
     setOpenIndex(openIndex === id ? "" : id);
+  };
+
+  const handleLiveChat = async () => {
+    if (!user) { router.push("/login"); return; }
+    setStartingChat(true);
+    try {
+      // Find admin account
+      const q = query(collection(db, "users"), where("role", "==", "admin"));
+      const snap = await getDocs(q);
+      if (snap.empty) { alert("Admin belum tersedia. Hubungi via telepon/email."); setStartingChat(false); return; }
+      const adminDoc = snap.docs[0];
+      const adminId = adminDoc.id;
+      const adminName = adminDoc.data().name || "Admin Persona+";
+      const res = await ChatService.getOrCreateChat(user.id, user.name, adminId, adminName);
+      if (res.success && res.chatId) {
+        router.push("/dashboard/chat");
+      } else {
+        alert("Gagal membuka chat. Coba lagi.");
+      }
+    } catch { alert("Terjadi kesalahan."); }
+    finally { setStartingChat(false); }
   };
 
   return (
@@ -108,14 +137,14 @@ export default function HelpCenterPage() {
             </p>
 
             <div className="space-y-4">
-              <a href="#" onClick={(e) => { e.preventDefault(); alert('Live chat akan segera tersedia!'); }}
+              <a href="#" onClick={(e) => { e.preventDefault(); handleLiveChat(); }}
                 className="w-full flex justify-start items-center gap-3 py-6 px-4 rounded-2xl border hover:bg-muted transition-colors cursor-pointer">
                 <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5" />
+                  {startingChat ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />}
                 </div>
                 <div className="text-left">
                   <p className="font-bold">Live Chat</p>
-                  <p className="text-xs text-muted-foreground">Balas instan via admin</p>
+                  <p className="text-xs text-muted-foreground">{startingChat ? 'Menghubungkan...' : 'Balas instan via admin'}</p>
                 </div>
               </a>
               <a href="tel:085173458645"

@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/auth";
 import { useRouter } from "next/navigation";
 import { DbService } from "@/services/db.service";
 import { OrderService } from "@/services/order.service";
+import { ChatService, ChatRoom, ChatMessage } from "@/services/chat.service";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { Users, ShoppingBag, Store, TrendingUp, Shield, Ban, CheckCircle2 } from "lucide-react";
+import { Users, ShoppingBag, Store, Shield, Ban, CheckCircle2, MessageCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -18,7 +19,15 @@ export default function AdminPage() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"accounts" | "orders">("accounts");
+  const [tab, setTab] = useState<"accounts" | "orders" | "support">("accounts");
+  // Support chat state
+  const [supportRooms, setSupportRooms] = useState<ChatRoom[]>([]);
+  const [activeSupportRoom, setActiveSupportRoom] = useState<ChatRoom | null>(null);
+  const [supportMessages, setSupportMessages] = useState<ChatMessage[]>([]);
+  const [replyMsg, setReplyMsg] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const supportEndRef = useRef<HTMLDivElement>(null);
+  const prevSupportCount = useRef<number>(0);
 
   useEffect(() => {
     if (loadingAuth) return;
@@ -40,6 +49,41 @@ export default function AdminPage() {
   const handleSuspend = async (userId: string, suspended: boolean) => {
     await updateDoc(doc(db, "users", userId), { suspended: !suspended });
     setAccounts(prev => prev.map(a => a.id === userId ? { ...a, suspended: !suspended } : a));
+  };
+
+  // Load support chats when tab switches
+  useEffect(() => {
+    if (tab === 'support' && user) {
+      ChatService.getUserChats(user.id).then(res => {
+        if (res.success) setSupportRooms(res.data);
+      });
+    }
+  }, [tab, user]);
+
+  // Auto scroll support chat
+  useEffect(() => {
+    if (supportMessages.length > prevSupportCount.current) {
+      supportEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    prevSupportCount.current = supportMessages.length;
+  }, [supportMessages]);
+
+  // Listen to active support room
+  useEffect(() => {
+    if (!activeSupportRoom || !user) return;
+    ChatService.markAsRead(activeSupportRoom.id, user.id);
+    const unsub = ChatService.listenToMessages(activeSupportRoom.id, msgs => setSupportMessages(msgs));
+    return () => unsub();
+  }, [activeSupportRoom, user]);
+
+  const handleSendReply = async () => {
+    if (!replyMsg.trim() || !activeSupportRoom || !user) return;
+    setSendingReply(true);
+    const recipientId = activeSupportRoom.participants.find(p => p !== user.id) || "";
+    await ChatService.sendMessage(activeSupportRoom.id, user.id, user.name, replyMsg.trim(), recipientId);
+    setReplyMsg("");
+    setSendingReply(false);
+    ChatService.getUserChats(user.id).then(res => { if (res.success) setSupportRooms(res.data); });
   };
 
   const stats = {
@@ -87,14 +131,105 @@ export default function AdminPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
           <button onClick={() => setTab("accounts")} className={`px-5 py-2 rounded-full font-medium text-sm transition-colors ${tab === 'accounts' ? 'bg-primary text-primary-foreground' : 'bg-card border hover:bg-muted'}`}>
             Daftar Akun
           </button>
           <button onClick={() => setTab("orders")} className={`px-5 py-2 rounded-full font-medium text-sm transition-colors ${tab === 'orders' ? 'bg-primary text-primary-foreground' : 'bg-card border hover:bg-muted'}`}>
             Semua Pesanan
           </button>
+          <button onClick={() => setTab("support")} className={`px-5 py-2 rounded-full font-medium text-sm transition-colors flex items-center gap-2 ${tab === 'support' ? 'bg-primary text-primary-foreground' : 'bg-card border hover:bg-muted'}`}>
+            <MessageCircle className="w-4 h-4" /> Live Chat Support
+          </button>
         </div>
+
+        {/* Support Chat Tab */}
+        {tab === 'support' && (
+          <div className="bg-card border rounded-2xl overflow-hidden shadow-sm" style={{ height: '600px' }}>
+            <div className="flex h-full">
+              {/* Room list */}
+              <div className="w-72 border-r flex flex-col bg-muted/10 shrink-0">
+                <div className="p-4 border-b">
+                  <h3 className="font-bold text-base">Percakapan Support</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{supportRooms.length} percakapan</p>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  {supportRooms.length === 0 ? (
+                    <div className="p-6 text-center text-sm text-muted-foreground">Belum ada percakapan.</div>
+                  ) : supportRooms.map(room => {
+                    const userId = room.participants.find(p => p !== user!.id) || "";
+                    const partnerName = room.participantNames?.[userId] || "Pengguna";
+                    return (
+                      <button key={room.id} onClick={() => { setActiveSupportRoom(room); setSupportMessages([]); }}
+                        className={`w-full p-4 flex gap-3 items-start border-b hover:bg-muted/30 transition-colors text-left ${activeSupportRoom?.id === room.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}>
+                        <div className="w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+                          {partnerName[0]?.toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{partnerName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{room.lastMessage || 'Belum ada pesan'}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Chat area */}
+              <div className="flex-1 flex flex-col">
+                {activeSupportRoom ? (
+                  <>
+                    <div className="p-4 border-b bg-muted/20 flex items-center gap-3">
+                      <MessageCircle className="w-5 h-5 text-primary" />
+                      <p className="font-semibold">
+                        {activeSupportRoom.participantNames?.[activeSupportRoom.participants.find(p => p !== user!.id) || ""] || "Pengguna"}
+                      </p>
+                      <span className="text-xs text-muted-foreground ml-auto">Support Chat</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                      {supportMessages.length === 0 && (
+                        <div className="text-center text-sm text-muted-foreground py-8">Belum ada pesan.</div>
+                      )}
+                      {supportMessages.map(msg => {
+                        const isMe = msg.senderId === user!.id;
+                        return (
+                          <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md'}`}>
+                              {!isMe && <p className="text-xs font-bold mb-1 opacity-70">{msg.senderName}</p>}
+                              {msg.imageUrl && <img src={msg.imageUrl} alt="Gambar" className="rounded-xl max-w-full mb-1" style={{ maxHeight: '150px' }} />}
+                              {msg.text && <p>{msg.text}</p>}
+                              <p className={`text-[10px] mt-1 ${isMe ? 'text-primary-foreground/70 text-right' : 'text-muted-foreground'}`}>
+                                {new Date(msg.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div ref={supportEndRef} />
+                    </div>
+                    <div className="p-4 border-t bg-card">
+                      <div className="flex gap-2 items-center">
+                        <input type="text" value={replyMsg} onChange={e => setReplyMsg(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSendReply()}
+                          placeholder="Balas sebagai Admin..."
+                          className="flex-1 px-4 py-2.5 rounded-full border bg-muted focus:bg-background focus:ring-2 focus:ring-primary focus:outline-none text-sm" />
+                        <Button onClick={handleSendReply} disabled={!replyMsg.trim() || sendingReply} size="icon" className="rounded-full w-10 h-10 shrink-0">
+                          <Send className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                      <MessageCircle className="w-16 h-16 text-muted-foreground/20 mx-auto mb-3" />
+                      <p className="font-semibold text-muted-foreground">Pilih percakapan di kiri</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Accounts Table */}
         {tab === 'accounts' && (

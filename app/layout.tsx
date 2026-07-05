@@ -17,11 +17,16 @@ export const metadata: Metadata = {
   title: "Persona+ | Temukan MUA, Hair Stylist & Sewa Kostum Terbaik",
   description: "Platform marketplace nomor 1 di Indonesia untuk menghubungkan kamu dengan penyedia jasa Makeup Artist (MUA), Hair Stylist, Cosplayer, dan rental Kostum terpercaya.",
   keywords: ["MUA", "Makeup Artist", "Sewa Kostum", "Cosplay", "Hair Stylist", "Marketplace Jasa"],
+  icons: {
+    icon: "/images/LOGO.webp",
+    apple: "/images/LOGO.webp",
+  },
   openGraph: {
     title: "Persona+ | Be AnyOne, Be Yourself",
     description: "Temukan penyedia jasa Makeup Artist dan Sewa Kostum terbaik di kotamu.",
     type: "website",
     locale: "id_ID",
+    images: ["/images/LOGO.webp"],
   },
 };
 

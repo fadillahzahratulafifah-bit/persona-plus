@@ -7,34 +7,37 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary via-secondary to-accent pt-20 pb-32">
-        <div className="absolute inset-0 bg-black/10 z-0" />
-        <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center text-center text-white">
-          <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold font-heading mb-6 max-w-4xl tracking-tight">
-            Be AnyOne, Be Yourself, <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">Be Persona</span>
-          </h1>
-          <p className="text-lg md:text-xl text-white/90 mb-10 max-w-2xl font-light">
-            Platform marketplace terlengkap untuk Makeup Artist, Cosplayer, dan penyewaan kostum di Indonesia. Wujudkan imajinasimu sekarang.
-          </p>
+      <section className="relative overflow-hidden bg-primary/5 pt-20 min-h-[500px] md:min-h-[600px] flex items-center">
+        {/* Background Characters */}
+        <div className="absolute inset-0 z-0 opacity-40 md:opacity-100 flex justify-center items-end">
+          <Image 
+            src="/assets/no backround.webp" 
+            alt="Cosplay Characters" 
+            fill 
+            className="object-cover object-center md:object-contain md:object-bottom pointer-events-none" 
+            priority
+          />
+        </div>
+        
+        <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center md:items-start text-center md:text-left mt-32 md:mt-48 mb-8">
           
-          <div className="bg-white p-2 rounded-full shadow-lg flex items-center w-full max-w-2xl mb-8">
-            <div className="flex-1 flex items-center px-4 border-r">
-              <Search className="h-5 w-5 text-muted-foreground mr-2" />
-              <input type="text" placeholder="Cari layanan, vendor, atau kostum..." className="w-full bg-transparent border-none focus:outline-none text-foreground py-2" />
+          <div className="bg-white/80 backdrop-blur-md p-2 rounded-full shadow-2xl flex items-center w-full max-w-2xl mb-8 border border-white/50">
+            <div className="flex-1 flex items-center px-4 border-r border-gray-200">
+              <Search className="h-5 w-5 text-primary mr-2" />
+              <input type="text" placeholder="Cari layanan, vendor, atau kostum..." className="w-full bg-transparent border-none focus:outline-none text-foreground py-2 font-medium" />
             </div>
-            <div className="hidden md:flex flex-1 items-center px-4 border-r">
-              <MapPin className="h-5 w-5 text-muted-foreground mr-2" />
-              <input type="text" placeholder="Lokasi" className="w-full bg-transparent border-none focus:outline-none text-foreground py-2" />
+            <div className="hidden md:flex flex-1 items-center px-4 border-r border-gray-200">
+              <MapPin className="h-5 w-5 text-primary mr-2" />
+              <input type="text" placeholder="Lokasi" className="w-full bg-transparent border-none focus:outline-none text-foreground py-2 font-medium" />
             </div>
-            <Button className="rounded-full bg-primary hover:bg-primary/90 text-white px-8">Cari</Button>
+            <Button className="rounded-full bg-primary hover:bg-primary/90 text-white px-8 shadow-lg shadow-primary/30">Cari</Button>
           </div>
           
           <div className="flex gap-4">
-            <Button size="lg" variant="secondary" className="rounded-full font-semibold">
+            <Button size="lg" variant="default" className="rounded-full font-bold shadow-lg shadow-primary/30 px-8">
               Cari Vendor
             </Button>
-            <Button size="lg" variant="outline" className="rounded-full bg-transparent text-white border-white hover:bg-white/20 font-semibold">
+            <Button size="lg" variant="outline" className="rounded-full bg-white/50 backdrop-blur-sm border-primary/20 text-primary hover:bg-white/80 font-bold px-8 shadow-sm">
               Jelajahi Layanan
             </Button>
           </div>
@@ -127,9 +130,13 @@ export default function Home() {
                 Daftar Sebagai Vendor
               </Button>
             </div>
-            <div className="relative w-full md:w-[400px] h-[300px] rounded-2xl overflow-hidden shadow-lg">
-              {/* Fallback image if asset not found */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-primary to-accent" />
+            <div className="relative w-full md:w-[400px] h-[300px] rounded-2xl overflow-hidden shadow-lg bg-black/5 flex items-center justify-center p-6 border border-primary/20">
+              <Image 
+                src="/assets/tagline.webp" 
+                alt="Tagline" 
+                fill 
+                className="object-contain p-2"
+              />
             </div>
           </div>
         </div>

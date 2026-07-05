@@ -1,9 +1,58 @@
-import { VendorDashboardService } from "@/services/vendor-dashboard.service";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/auth";
+import { OrderService, Order } from "@/services/order.service";
 import { DollarSign, CalendarCheck, CheckCircle2, Package } from "lucide-react";
 
-export default async function VendorDashboardOverview() {
-  const { data: stats } = await VendorDashboardService.getDashboardStats();
-  const { data: recentBookings } = await VendorDashboardService.getVendorBookings();
+export default function VendorDashboardOverview() {
+  const user = useAuthStore(state => state.user);
+  const [recentBookings, setRecentBookings] = useState<Order[]>([]);
+  const [stats, setStats] = useState({
+    totalRevenue: "Rp 0",
+    activeBookings: 0,
+    completedBookings: 0,
+    totalServices: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      OrderService.getVendorOrders(user.id).then(res => {
+        if (res.success && res.data) {
+          const orders = res.data;
+          
+          let revenue = 0;
+          let active = 0;
+          let completed = 0;
+
+          orders.forEach(order => {
+            if (order.status === 'completed') {
+              completed++;
+              // parse price "Rp 500.000" to number
+              const price = parseInt(order.total.replace(/[^0-9]/g, "")) || 0;
+              revenue += price;
+            } else if (order.status === 'pending' || order.status === 'confirmed') {
+              active++;
+            }
+          });
+
+          setStats({
+            totalRevenue: `Rp ${revenue.toLocaleString('id-ID')}`,
+            activeBookings: active,
+            completedBookings: completed,
+            totalServices: 0 // real app would query services collection
+          });
+          setRecentBookings(orders.slice(0, 5)); // show top 5
+        }
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  if (loading) return <div className="p-20 text-center">Memuat dashboard...</div>;
 
   return (
     <div className="space-y-8">
@@ -90,6 +139,11 @@ export default async function VendorDashboardOverview() {
                   </td>
                 </tr>
               ))}
+              {recentBookings.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground">Belum ada pesanan terbaru.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

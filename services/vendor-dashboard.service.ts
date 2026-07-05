@@ -18,41 +18,13 @@ export interface VendorBookingItem {
 }
 
 const MOCK_STATS: DashboardStats = {
-  totalRevenue: "Rp 8.500.000",
-  activeBookings: 12,
-  completedBookings: 45,
-  totalServices: 5
+  totalRevenue: "Rp 0",
+  activeBookings: 0,
+  completedBookings: 0,
+  totalServices: 0
 };
 
-const MOCK_VENDOR_BOOKINGS: VendorBookingItem[] = [
-  {
-    id: "BK-1001",
-    customerName: "Amanda Putri",
-    serviceName: "Makeup Wisuda",
-    date: "2026-08-10",
-    time: "08:00",
-    status: "pending",
-    price: "Rp 350.000"
-  },
-  {
-    id: "BK-1002",
-    customerName: "Sarah M.",
-    serviceName: "Makeup Wedding",
-    date: "2026-08-15",
-    time: "06:00",
-    status: "confirmed",
-    price: "Rp 1.500.000"
-  },
-  {
-    id: "BK-1003",
-    customerName: "Budi Santoso",
-    serviceName: "Sewa Kostum Spiderman",
-    date: "2026-08-12",
-    time: "10:00",
-    status: "completed",
-    price: "Rp 150.000"
-  }
-];
+const MOCK_VENDOR_BOOKINGS: VendorBookingItem[] = [];
 
 export class VendorDashboardService {
   static async getDashboardStats(): Promise<{ success: boolean; data: DashboardStats }> {

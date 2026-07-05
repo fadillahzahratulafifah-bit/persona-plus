@@ -1,8 +1,13 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { User, Mail, Phone, MapPin } from "lucide-react";
 import Image from "next/image";
+import { useAuthStore } from "@/store/auth";
 
 export default function CustomerProfilePage() {
+  const user = useAuthStore(state => state.user);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
@@ -29,21 +34,21 @@ export default function CustomerProfilePage() {
                 <label className="text-sm font-medium text-muted-foreground">Nama Lengkap</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input type="text" defaultValue="Amanda Putri" className="w-full pl-10 pr-4 py-2 border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none" />
+                  <input type="text" defaultValue={user?.name || ""} placeholder="Masukkan nama" className="w-full pl-10 pr-4 py-2 border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none" />
                 </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Email</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input type="email" defaultValue="amanda.putri@example.com" disabled className="w-full pl-10 pr-4 py-2 border rounded-xl bg-muted text-muted-foreground" />
+                  <input type="email" defaultValue={user?.email || ""} disabled className="w-full pl-10 pr-4 py-2 border rounded-xl bg-muted text-muted-foreground" />
                 </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Nomor Telepon</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input type="tel" defaultValue="081234567890" className="w-full pl-10 pr-4 py-2 border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none" />
+                  <input type="tel" defaultValue="" placeholder="Belum diatur" className="w-full pl-10 pr-4 py-2 border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none" />
                 </div>
               </div>
             </div>
@@ -57,8 +62,8 @@ export default function CustomerProfilePage() {
                 <MapPin className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium text-sm mb-1">Rumah</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Jl. Sudirman No. 123, Komplek Mawar Blok B, Jakarta Selatan, DKI Jakarta 12345.
+                  <p className="text-sm text-muted-foreground leading-relaxed italic">
+                    Belum ada alamat yang ditambahkan.
                   </p>
                 </div>
               </div>

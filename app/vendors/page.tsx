@@ -1,13 +1,34 @@
-import { VendorService } from "@/services/vendor.service";
+"use client";
+
+import { useEffect, useState } from "react";
+import { DbService } from "@/services/db.service";
 import VendorCard from "@/components/cards/VendorCard";
 import { Search, MapPin, Filter } from "lucide-react";
 
-export default async function VendorsPage({ searchParams }: { searchParams: { q?: string } }) {
-  const query = searchParams?.q || "";
-  const { data: vendors, success } = await VendorService.getVendors(query);
+export default function VendorsPage() {
+  const [query, setQuery] = useState("");
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    DbService.getVendors().then(res => {
+      console.log('[VendorsPage] getVendors result:', res);
+      if (res.success) {
+        setVendors(res.data);
+      } else {
+        console.error('[VendorsPage] Error:', res.error);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const filteredVendors = vendors.filter(v => 
+    v.name?.toLowerCase().includes(query.toLowerCase()) || 
+    v.category?.toLowerCase().includes(query.toLowerCase())
+  );
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-8">
+    <div className="container mx-auto px-4 md:px-6 pt-28 pb-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold font-heading text-foreground mb-2">Cari Vendor</h1>
@@ -21,7 +42,8 @@ export default async function VendorsPage({ searchParams }: { searchParams: { q?
             <input 
               type="text" 
               placeholder="Cari nama atau kategori..." 
-              defaultValue={query}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-primary text-sm"
             />
           </div>
@@ -61,14 +83,31 @@ export default async function VendorsPage({ searchParams }: { searchParams: { q?
 
         {/* Vendor Grid */}
         <div className="flex-1">
-          {!success || vendors.length === 0 ? (
+          {loading ? (
             <div className="text-center py-20 bg-card rounded-2xl border border-dashed">
-              <p className="text-muted-foreground">Tidak ada vendor yang ditemukan.</p>
+              <p className="text-muted-foreground">Memuat daftar vendor...</p>
+            </div>
+          ) : filteredVendors.length === 0 ? (
+            <div className="text-center py-20 bg-card rounded-2xl border border-dashed">
+              <p className="text-muted-foreground mb-4">Belum ada vendor yang tersedia.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {vendors.map(vendor => (
-                <VendorCard key={vendor.id} vendor={vendor} />
+              {filteredVendors.map(vendor => (
+                <VendorCard key={vendor.id} vendor={{
+                  id: vendor.id,
+                  name: vendor.name || 'Vendor Tanpa Nama',
+                  slug: vendor.id,
+                  image: vendor.image || '/assets/KL.Makeup K-Pop.webp',
+                  rating: vendor.rating || '0',
+                  reviewsCount: vendor.reviewsCount || 0,
+                  location: vendor.location || 'Lokasi belum diatur',
+                  category: vendor.category || 'Belum ada kategori',
+                  price: vendor.price || 'Hubungi Vendor',
+                  description: vendor.description || '',
+                  services: [],
+                  portfolios: []
+                }} />
               ))}
             </div>
           )}

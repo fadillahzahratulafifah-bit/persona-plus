@@ -1,13 +1,31 @@
-import { CostumeService } from "@/services/costume.service";
+"use client";
+
+import { useEffect, useState } from "react";
+import { DbService, VendorServiceItem } from "@/services/db.service";
 import CostumeCard from "@/components/cards/CostumeCard";
 import { Search, Filter } from "lucide-react";
 
-export default async function CostumesPage({ searchParams }: { searchParams: { q?: string } }) {
-  const query = searchParams?.q || "";
-  const { data: costumes, success } = await CostumeService.getCostumes(query);
+export default function CostumesPage() {
+  const [query, setQuery] = useState("");
+  const [costumes, setCostumes] = useState<VendorServiceItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    DbService.getServicesByCategory('costume').then(res => {
+      if (res.success) {
+        setCostumes(res.data);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const filteredCostumes = costumes.filter(c => 
+    c.name?.toLowerCase().includes(query.toLowerCase()) || 
+    c.description?.toLowerCase().includes(query.toLowerCase())
+  );
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-8">
+    <div className="container mx-auto px-4 md:px-6 pt-28 pb-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold font-heading text-foreground mb-2">Sewa Kostum</h1>
@@ -20,7 +38,8 @@ export default async function CostumesPage({ searchParams }: { searchParams: { q
             <input 
               type="text" 
               placeholder="Cari karakter atau anime..." 
-              defaultValue={query}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-primary text-sm"
             />
           </div>
@@ -59,14 +78,32 @@ export default async function CostumesPage({ searchParams }: { searchParams: { q
 
         {/* Costume Grid */}
         <div className="flex-1">
-          {!success || costumes.length === 0 ? (
+          {loading ? (
             <div className="text-center py-20 bg-card rounded-2xl border border-dashed">
-              <p className="text-muted-foreground">Tidak ada kostum yang ditemukan.</p>
+              <p className="text-muted-foreground">Memuat daftar kostum...</p>
+            </div>
+          ) : filteredCostumes.length === 0 ? (
+            <div className="text-center py-20 bg-card rounded-2xl border border-dashed">
+              <p className="text-muted-foreground">Belum ada kostum yang tersedia saat ini.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {costumes.map(costume => (
-                <CostumeCard key={costume.id} costume={costume} />
+              {/* Note: In a real app we'd map CostumeServiceItem to the expected Costume interface for CostumeCard, or adapt CostumeCard */}
+              {filteredCostumes.map(costume => (
+                <CostumeCard key={costume.id} costume={{
+                  id: costume.id,
+                  vendorId: costume.vendorId,
+                  vendorName: costume.vendorName,
+                  name: costume.name,
+                  slug: costume.id,
+                  character: "",
+                  anime: "",
+                  size: "All Size",
+                  price: costume.price,
+                  stock: 1,
+                  image: costume.imageUrl || '/assets/KL.Sewa Kostum.webp',
+                  description: costume.description
+                }} />
               ))}
             </div>
           )}

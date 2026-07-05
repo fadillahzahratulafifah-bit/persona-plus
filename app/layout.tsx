@@ -28,6 +28,7 @@ export const metadata: Metadata = {
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AuthProvider } from "@/components/providers/auth-provider";
 
 export default function RootLayout({
   children,
@@ -43,11 +44,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Navbar />
-          <main className="min-h-screen">
+          <AuthProvider>
+            <Navbar />
+            <main className="min-h-screen">
             {children}
           </main>
           <Footer />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

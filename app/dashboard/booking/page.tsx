@@ -1,28 +1,57 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useOrderStore } from "@/store/order";
-import { Clock, Calendar, ChevronRight, CheckCircle2 } from "lucide-react";
+import { useAuthStore } from "@/store/auth";
+import { OrderService, Order, OrderStatus } from "@/services/order.service";
+import { Clock, Calendar, CheckCircle2, XCircle, CheckCheck, ChevronRight, PackageSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { db } from "@/lib/firebase";
+import { doc, updateDoc } from "firebase/firestore";
 
 export default function BookingHistoryPage() {
-  const getCustomerOrders = useOrderStore((state) => state.getCustomerOrders);
-  const bookings = getCustomerOrders("cust-1");
+  const user = useAuthStore(state => state.user);
+  const [bookings, setBookings] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>("all");
 
-  const getStatusBadge = (status: string) => {
+  useEffect(() => {
+    if (user) {
+      OrderService.getCustomerOrders(user.id).then(res => {
+        if (res.success) setBookings(res.data);
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const handleCancel = async (id: string) => {
+    if (!confirm("Apakah Anda yakin ingin membatalkan pesanan ini?")) return;
+    try {
+      await updateDoc(doc(db, "orders", id), { status: 'cancelled' });
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' as OrderStatus } : b));
+    } catch {
+      alert("Gagal membatalkan pesanan.");
+    }
+  };
+
+  const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
-      case 'confirmed':
-        return <span className="px-3 py-1 bg-success/10 text-success rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Dikonfirmasi</span>;
-      case 'completed':
-        return <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold">Selesai</span>;
       case 'pending':
-        return <span className="px-3 py-1 bg-warning/10 text-warning rounded-full text-xs font-bold">Menunggu</span>;
+        return <span className="inline-flex items-center gap-1 px-3 py-1 bg-warning/15 text-warning rounded-full text-xs font-bold"><Clock className="w-3 h-3"/>Menunggu Konfirmasi</span>;
+      case 'confirmed':
+        return <span className="inline-flex items-center gap-1 px-3 py-1 bg-success/15 text-success rounded-full text-xs font-bold"><CheckCircle2 className="w-3 h-3"/>Dikonfirmasi</span>;
+      case 'completed':
+        return <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/15 text-primary rounded-full text-xs font-bold"><CheckCheck className="w-3 h-3"/>Selesai</span>;
       case 'cancelled':
-        return <span className="px-3 py-1 bg-destructive/10 text-destructive rounded-full text-xs font-bold">Dibatalkan</span>;
+        return <span className="inline-flex items-center gap-1 px-3 py-1 bg-destructive/15 text-destructive rounded-full text-xs font-bold"><XCircle className="w-3 h-3"/>Dibatalkan</span>;
       default:
         return <span className="px-3 py-1 bg-muted text-muted-foreground rounded-full text-xs font-bold">{status}</span>;
     }
   };
+
+  const filtered = filter === "all" ? bookings : bookings.filter(b => b.status === filter);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -31,50 +60,91 @@ export default function BookingHistoryPage() {
         <p className="text-muted-foreground">Pantau status booking jasa dan sewa kostum Anda.</p>
       </div>
 
-      {bookings.length === 0 ? (
-        <div className="py-20 text-center bg-card border rounded-3xl">
-          <p className="text-muted-foreground mb-4">Anda belum memiliki riwayat pesanan.</p>
-          <Link href="/vendors"><Button className="rounded-full">Cari Layanan</Button></Link>
+      {/* Filter Tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {[
+          { key: "all", label: "Semua" },
+          { key: "pending", label: "Menunggu" },
+          { key: "confirmed", label: "Dikonfirmasi" },
+          { key: "completed", label: "Selesai" },
+          { key: "cancelled", label: "Dibatalkan" },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setFilter(tab.key)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${filter === tab.key ? 'bg-primary text-primary-foreground' : 'bg-card border hover:bg-muted'}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="py-20 text-center">Memuat riwayat pesanan...</div>
+      ) : filtered.length === 0 ? (
+        <div className="py-20 text-center bg-card border rounded-3xl flex flex-col items-center gap-4">
+          <PackageSearch className="w-16 h-16 text-muted-foreground/50" />
+          <p className="text-muted-foreground">Belum ada pesanan {filter !== 'all' ? `dengan status ini` : 'sama sekali'}.</p>
+          <Link href="/vendors">
+            <Button className="rounded-full">Cari Layanan Sekarang</Button>
+          </Link>
         </div>
       ) : (
         <div className="space-y-4">
-          {bookings.map(booking => (
-            <div key={booking.id} className="bg-card border rounded-2xl p-5 hover:border-primary/50 transition-colors flex flex-col md:flex-row gap-6 md:items-center justify-between shadow-sm">
-              
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center justify-between md:justify-start gap-4">
-                  <span className="text-xs text-muted-foreground font-mono">{booking.id}</span>
-                  {getStatusBadge(booking.status)}
-                </div>
-                
-                <div>
-                  <h3 className="font-bold text-lg">{booking.serviceName}</h3>
-                  <p className="text-sm text-muted-foreground">{booking.vendorName}</p>
-                </div>
-                
-                <div className="flex items-center gap-4 text-sm font-medium">
-                  <span className="flex items-center gap-1"><Calendar className="w-4 h-4 text-muted-foreground"/> {booking.date}</span>
-                  <span className="flex items-center gap-1"><Clock className="w-4 h-4 text-muted-foreground"/> {booking.time}</span>
-                </div>
+          {filtered.map(booking => (
+            <div key={booking.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:border-primary/30 transition-colors">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-3 bg-muted/30 border-b">
+                <span className="text-xs font-mono text-muted-foreground">{booking.id}</span>
+                {getStatusBadge(booking.status as OrderStatus)}
               </div>
 
-              <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-4 border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-6">
-                <div>
-                  <p className="text-xs text-muted-foreground md:text-right mb-1">Total Belanja</p>
-                  <p className="font-bold text-primary text-lg">{booking.total}</p>
+              {/* Body */}
+              <div className="p-5 flex flex-col md:flex-row gap-5 items-start md:items-center justify-between">
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h3 className="font-bold text-lg">{booking.serviceName}</h3>
+                    <p className="text-sm text-muted-foreground">oleh <span className="font-medium text-foreground">{booking.vendorName}</span></p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4 text-sm">
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <Calendar className="w-4 h-4" />
+                      {new Date(booking.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <Clock className="w-4 h-4" /> {booking.time} WIB
+                    </span>
+                  </div>
+                  {booking.note && (
+                    <p className="text-sm text-muted-foreground italic">"{booking.note}"</p>
+                  )}
                 </div>
-                
-                {booking.status === 'confirmed' ? (
-                  <Button className="w-full md:w-auto rounded-full bg-success hover:bg-success/90">
-                    Selesaikan Pesanan
-                  </Button>
-                ) : (
-                  <Button variant="outline" className="w-full md:w-auto rounded-full flex items-center gap-2">
-                    Lihat Detail <ChevronRight className="w-3 h-3 ml-1" />
-                  </Button>
-                )}
+
+                <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-3 md:gap-3 border-t md:border-t-0 md:border-l pt-3 md:pt-0 md:pl-6">
+                  <div className="md:text-right">
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="font-bold text-primary text-lg">{booking.total}</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {booking.status === 'pending' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full text-destructive border-destructive/40 hover:bg-destructive hover:text-white text-xs"
+                        onClick={() => handleCancel(booking.id)}
+                      >
+                        Batalkan
+                      </Button>
+                    )}
+                    <Link href={`/vendors/${booking.vendorId}`}>
+                      <Button size="sm" variant="outline" className="rounded-full text-xs">
+                        Lihat Vendor <ChevronRight className="w-3 h-3 ml-1" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               </div>
-              
             </div>
           ))}
         </div>

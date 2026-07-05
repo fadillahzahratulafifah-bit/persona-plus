@@ -1,141 +1,191 @@
 "use client";
 
-import { useState } from "react";
-import { Send, Image as ImageIcon, Smile, Search, Phone, Video, MoreVertical } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { useAuthStore } from "@/store/auth";
+import { ChatService, ChatRoom, ChatMessage } from "@/services/chat.service";
+import { Send, MessageSquare, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const CONTACTS = [
-  { id: 1, name: "Clarissa Makeup", role: "MUA", lastMessage: "Baik kak, untuk tanggal 20 kosong.", time: "10:30", unread: 2, online: true },
-  { id: 2, name: "Yuki Cosplay", role: "Cosplayer", lastMessage: "Kostum Genshin ready ukuran L kak.", time: "Kemarin", unread: 0, online: false },
-  { id: 3, name: "Dewi Hair Stylist", role: "Hair Stylist", lastMessage: "Terima kasih atas bookingannya!", time: "Senin", unread: 0, online: true },
-];
+export default function ChatPage() {
+  const user = useAuthStore(state => state.user);
+  const [rooms, setRooms] = useState<ChatRoom[]>([]);
+  const [activeRoom, setActiveRoom] = useState<ChatRoom | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [newMsg, setNewMsg] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-export default function CustomerChatPage() {
-  const [activeContact, setActiveContact] = useState(CONTACTS[0]);
+  useEffect(() => {
+    if (user) {
+      ChatService.getUserChats(user.id).then(res => {
+        if (res.success) setRooms(res.data);
+        setLoading(false);
+      });
+    }
+  }, [user]);
+
+  // Listen to messages when a room is active
+  useEffect(() => {
+    if (!activeRoom) return;
+    ChatService.markAsRead(activeRoom.id, user!.id);
+    const unsubscribe = ChatService.listenToMessages(activeRoom.id, msgs => {
+      setMessages(msgs);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    });
+    return () => unsubscribe();
+  }, [activeRoom, user]);
+
+  const handleSelectRoom = (room: ChatRoom) => {
+    setActiveRoom(room);
+    setMessages([]);
+  };
+
+  const handleSend = async () => {
+    if (!newMsg.trim() || !activeRoom || !user) return;
+    setSending(true);
+    const recipientId = activeRoom.participants.find(p => p !== user.id) || "";
+    await ChatService.sendMessage(activeRoom.id, user.id, user.name, newMsg.trim(), recipientId);
+    setNewMsg("");
+    setSending(false);
+    // Refresh rooms list to update lastMessage
+    ChatService.getUserChats(user.id).then(res => { if (res.success) setRooms(res.data); });
+  };
+
+  const getPartnerName = (room: ChatRoom) => {
+    const partnerId = room.participants.find(p => p !== user?.id) || "";
+    return room.participantNames?.[partnerId] || "Pengguna";
+  };
+
+  if (!user) return (
+    <div className="py-20 text-center text-muted-foreground">Silakan login untuk mengakses pesan.</div>
+  );
 
   return (
-    <div className="bg-card rounded-3xl border h-[calc(100vh-140px)] flex overflow-hidden animate-in fade-in duration-500">
-      
-      {/* Sidebar Contacts */}
-      <div className="w-1/3 border-r flex flex-col bg-muted/10">
-        <div className="p-4 border-b">
-          <h2 className="font-bold text-lg font-heading mb-4">Pesan</h2>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input 
-              type="text" 
-              placeholder="Cari percakapan..." 
-              className="w-full pl-9 pr-4 py-2 rounded-full border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-            />
+    <div className="bg-card rounded-3xl border shadow-sm overflow-hidden" style={{ height: 'calc(100vh - 220px)', minHeight: '500px' }}>
+      <div className="flex h-full">
+        {/* Left: Room List */}
+        <div className="w-80 border-r flex flex-col bg-muted/10 shrink-0">
+          <div className="p-4 border-b">
+            <h2 className="font-bold text-lg font-heading mb-3">Pesan</h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Cari percakapan..."
+                className="w-full pl-9 pr-4 py-2 rounded-full border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {CONTACTS.map((contact) => (
-            <div 
-              key={contact.id} 
-              onClick={() => setActiveContact(contact)}
-              className={`p-4 border-b cursor-pointer transition-colors flex gap-3 ${activeContact.id === contact.id ? "bg-primary/5" : "hover:bg-muted/50"}`}
-            >
-              <div className="relative">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
-                  {contact.name.charAt(0)}
+          <div className="flex-1 overflow-y-auto">
+            {loading ? (
+              <div className="p-8 text-center text-muted-foreground text-sm">Memuat percakapan...</div>
+            ) : rooms.length === 0 ? (
+              <div className="p-8 text-center">
+                <MessageSquare className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-muted-foreground text-sm">Belum ada percakapan.</p>
+                <p className="text-xs text-muted-foreground mt-1">Chat akan muncul setelah Anda memesan layanan.</p>
+              </div>
+            ) : rooms.map(room => (
+              <div
+                key={room.id}
+                onClick={() => handleSelectRoom(room)}
+                className={`p-4 border-b cursor-pointer transition-colors flex gap-3 ${activeRoom?.id === room.id ? 'bg-primary/5' : 'hover:bg-muted/50'}`}
+              >
+                <div className="w-11 h-11 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-base shrink-0">
+                  {getPartnerName(room)[0].toUpperCase()}
                 </div>
-                {contact.online && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-card rounded-full"></div>
+                <div className="flex-1 overflow-hidden">
+                  <div className="flex justify-between items-start mb-1">
+                    <p className="font-semibold text-sm truncate">{getPartnerName(room)}</p>
+                    <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                      {room.lastMessageAt ? new Date(room.lastMessageAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">{room.lastMessage || 'Mulai percakapan...'}</p>
+                </div>
+                {room.unreadCount?.[user.id] > 0 && (
+                  <div className="w-5 h-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center font-bold shrink-0">
+                    {room.unreadCount[user.id]}
+                  </div>
                 )}
               </div>
-              <div className="flex-1 overflow-hidden">
-                <div className="flex justify-between items-start mb-1">
-                  <h4 className="font-bold text-sm truncate">{contact.name}</h4>
-                  <span className="text-xs text-muted-foreground">{contact.time}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: Chat Window */}
+        <div className="flex-1 flex flex-col">
+          {activeRoom ? (
+            <>
+              {/* Chat Header */}
+              <div className="p-4 border-b flex items-center gap-3 bg-card">
+                <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                  {getPartnerName(activeRoom)[0].toUpperCase()}
                 </div>
-                <div className="flex justify-between items-center">
-                  <p className="text-xs text-muted-foreground truncate">{contact.lastMessage}</p>
-                  {contact.unread > 0 && (
-                    <span className="bg-primary text-primary-foreground text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">
-                      {contact.unread}
-                    </span>
-                  )}
+                <div>
+                  <p className="font-bold">{getPartnerName(activeRoom)}</p>
+                  <p className="text-xs text-success">Online</p>
                 </div>
               </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {messages.length === 0 && (
+                  <div className="text-center text-sm text-muted-foreground py-8">
+                    Mulai percakapan dengan mengirim pesan pertama!
+                  </div>
+                )}
+                {messages.map(msg => {
+                  const isMe = msg.senderId === user.id;
+                  return (
+                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md'}`}>
+                        <p>{msg.text}</p>
+                        <p className={`text-[10px] mt-1 ${isMe ? 'text-primary-foreground/70 text-right' : 'text-muted-foreground'}`}>
+                          {new Date(msg.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input */}
+              <div className="p-4 border-t bg-card">
+                <div className="flex gap-3 items-center">
+                  <input
+                    type="text"
+                    value={newMsg}
+                    onChange={e => setNewMsg(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+                    placeholder="Ketik pesan..."
+                    className="flex-1 px-4 py-2.5 rounded-full border bg-muted focus:bg-background focus:ring-2 focus:ring-primary focus:outline-none text-sm"
+                  />
+                  <Button
+                    onClick={handleSend}
+                    disabled={!newMsg.trim() || sending}
+                    size="icon"
+                    className="rounded-full w-10 h-10 shrink-0"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-center p-8">
+              <div>
+                <MessageSquare className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+                <p className="font-semibold text-lg mb-2">Pilih Percakapan</p>
+                <p className="text-sm text-muted-foreground">Pilih kontak di sebelah kiri untuk mulai chatting.</p>
+              </div>
             </div>
-          ))}
+          )}
         </div>
       </div>
-
-      {/* Chat Area */}
-      <div className="w-2/3 flex flex-col">
-        {/* Chat Header */}
-        <div className="p-4 border-b flex items-center justify-between bg-card">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
-              {activeContact.name.charAt(0)}
-            </div>
-            <div>
-              <h3 className="font-bold">{activeContact.name}</h3>
-              <p className="text-xs text-muted-foreground">{activeContact.role} • {activeContact.online ? "Online" : "Offline"}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Button variant="ghost" size="icon"><Phone className="w-5 h-5" /></Button>
-            <Button variant="ghost" size="icon"><Video className="w-5 h-5" /></Button>
-            <Button variant="ghost" size="icon"><MoreVertical className="w-5 h-5" /></Button>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/5">
-          <div className="flex justify-center">
-            <span className="text-xs bg-muted px-3 py-1 rounded-full text-muted-foreground">Hari ini</span>
-          </div>
-          
-          {/* Vendor Message */}
-          <div className="flex justify-start">
-            <div className="bg-card border px-4 py-2 rounded-2xl rounded-tl-none max-w-[70%] shadow-sm">
-              <p className="text-sm">Halo kak, ada yang bisa kami bantu terkait layanan makeup wisuda?</p>
-              <span className="text-[10px] text-muted-foreground mt-1 block">10:28</span>
-            </div>
-          </div>
-
-          {/* Customer Message */}
-          <div className="flex justify-end">
-            <div className="bg-primary text-primary-foreground px-4 py-2 rounded-2xl rounded-tr-none max-w-[70%] shadow-sm">
-              <p className="text-sm">Siang, untuk tanggal 20 besok apakah jadwal jam 8 pagi masih kosong?</p>
-              <span className="text-[10px] text-primary-foreground/70 mt-1 block text-right">10:29</span>
-            </div>
-          </div>
-
-          {/* Vendor Message */}
-          <div className="flex justify-start">
-            <div className="bg-card border px-4 py-2 rounded-2xl rounded-tl-none max-w-[70%] shadow-sm">
-              <p className="text-sm">{activeContact.lastMessage}</p>
-              <span className="text-[10px] text-muted-foreground mt-1 block">{activeContact.time}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Chat Input */}
-        <div className="p-4 border-t bg-card">
-          <div className="flex items-center gap-2 bg-muted/50 border rounded-full px-2 py-2">
-            <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground shrink-0">
-              <ImageIcon className="w-5 h-5" />
-            </Button>
-            <input 
-              type="text" 
-              placeholder="Tulis pesan..." 
-              className="flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-sm px-2"
-            />
-            <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground shrink-0">
-              <Smile className="w-5 h-5" />
-            </Button>
-            <Button className="rounded-full shrink-0 h-10 w-10 p-0">
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 }

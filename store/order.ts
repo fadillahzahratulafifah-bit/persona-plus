@@ -28,22 +28,7 @@ interface OrderState {
 export const useOrderStore = create<OrderState>()(
   persist(
     (set, get) => ({
-      orders: [
-        // Default dummy data so the list is not empty initially
-        {
-          id: 'ORD-1234',
-          customerId: 'cust-1',
-          customerName: 'Budi (Dummy)',
-          vendorId: 'vendor-1',
-          vendorName: 'Clarissa Makeup',
-          serviceName: 'Makeup Wisuda Premium',
-          date: '10 Aug 2026',
-          time: '08:00',
-          total: 'Rp 500.000',
-          status: 'pending',
-          createdAt: new Date().toISOString(),
-        }
-      ],
+      orders: [],
       addOrder: (orderData) => {
         const id = `ORD-${Math.floor(Math.random() * 10000)}`;
         const newOrder: Order = {

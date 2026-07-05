@@ -18,20 +18,7 @@ interface VendorState {
 export const useVendorStore = create<VendorState>()(
   persist(
     (set, get) => ({
-      services: [
-        {
-          id: 'svc-1',
-          name: 'Makeup Wisuda Premium',
-          description: 'Makeup flawless tahan 12 jam, termasuk hairdo/hijab do.',
-          price: 'Rp 500.000',
-        },
-        {
-          id: 'svc-2',
-          name: 'Makeup Party Glam',
-          description: 'Makeup gaya glamour cocok untuk acara malam.',
-          price: 'Rp 650.000',
-        }
-      ],
+      services: [],
       addService: (service) => {
         const newService: VendorServiceItem = {
           ...service,

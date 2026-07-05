@@ -3,16 +3,24 @@
 import { use, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth";
 import { DbService, VendorServiceItem } from "@/services/db.service";
+import { ChatService } from "@/services/chat.service";
 import { Star, MapPin, CheckCircle, Heart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CldImage } from "next-cloudinary";
 
 export default function VendorDetailPage({ params: paramsPromise }: { params: Promise<{ slug: string }> }) {
   const params = use(paramsPromise);
+  const router = useRouter();
+  const user = useAuthStore(state => state.user);
+  
   const [vendor, setVendor] = useState<any>(null);
   const [services, setServices] = useState<VendorServiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [creatingChat, setCreatingChat] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -30,6 +38,38 @@ export default function VendorDetailPage({ params: paramsPromise }: { params: Pr
     }
     loadData();
   }, [params.slug]);
+
+  const handleChatVendor = async () => {
+    if (!user) {
+      alert("Harap login terlebih dahulu untuk memulai chat.");
+      router.push("/login");
+      return;
+    }
+    
+    setCreatingChat(true);
+    try {
+      // 1. Get or create room
+      const roomRes = await ChatService.getOrCreateChat(user.id, user.name, vendor.id, vendor.name);
+      
+      if (!roomRes.success || !roomRes.chatId) {
+        throw new Error(roomRes.error || "Failed to create chat room");
+      }
+
+      // 2. Send an initial hidden message or just create room
+      await ChatService.sendMessage(
+        roomRes.chatId, 
+        user.id, 
+        user.name, 
+        "Halo, saya ingin bertanya tentang layanan Anda.", 
+        vendor.id
+      );
+      router.push('/dashboard/chat');
+    } catch (err) {
+      console.error(err);
+      alert("Gagal memulai chat.");
+      setCreatingChat(false);
+    }
+  };
 
   if (loading) {
     return <div className="container mx-auto px-4 py-32 text-center">Memuat data vendor...</div>;
@@ -111,9 +151,16 @@ export default function VendorDetailPage({ params: paramsPromise }: { params: Pr
               ) : (
                 services.map(service => (
                   <div key={service.id} className="p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/50 transition-colors">
-                    <div>
-                      <h4 className="font-bold text-foreground">{service.name}</h4>
-                      <p className="text-sm text-muted-foreground">{service.description}</p>
+                    <div className="flex gap-4 items-center">
+                      {service.imageUrl && (
+                        <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 relative bg-muted">
+                          <CldImage src={service.imageUrl} alt={service.name} fill className="object-cover" />
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-bold text-foreground">{service.name}</h4>
+                        <p className="text-sm text-muted-foreground">{service.description}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-4 sm:flex-col sm:items-end">
                       <span className="font-bold text-primary">{service.price}</span>
@@ -134,7 +181,15 @@ export default function VendorDetailPage({ params: paramsPromise }: { params: Pr
               <Link href={`/booking/${vendor.id}`}>
                 <Button className="w-full rounded-full mb-3" size="lg">Booking Sekarang</Button>
               </Link>
-              <Button className="w-full rounded-full" size="lg" variant="outline">Chat Vendor</Button>
+              <Button 
+                onClick={handleChatVendor}
+                disabled={creatingChat}
+                className="w-full rounded-full" 
+                size="lg" 
+                variant="outline"
+              >
+                {creatingChat ? "Membuka Chat..." : "Chat Vendor"}
+              </Button>
             </div>
           </div>
           

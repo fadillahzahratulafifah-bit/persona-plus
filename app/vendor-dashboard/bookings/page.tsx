@@ -2,17 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth";
+import { useRouter } from "next/navigation";
 import { OrderService, Order, OrderStatus } from "@/services/order.service";
+import { ChatService } from "@/services/chat.service";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { CheckCircle2, Clock, XCircle, CheckCheck, Calendar, User, MessageSquare, DollarSign } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, CheckCheck, Calendar, User, MessageSquare, DollarSign, Phone, MapPin } from "lucide-react";
 
 export default function BookingsManagementPage() {
+  const router = useRouter();
   const user = useAuthStore(state => state.user);
   const [bookings, setBookings] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [creatingChatId, setCreatingChatId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -32,6 +36,29 @@ export default function BookingsManagementPage() {
     } catch (error) {
       console.error("Failed to update status", error);
       alert("Gagal mengupdate status pesanan.");
+    }
+  };
+
+  const handleChatClient = async (customerId: string, customerName: string, orderId: string) => {
+    if (!user) return;
+    setCreatingChatId(orderId);
+    try {
+      const roomRes = await ChatService.getOrCreateChat(user.id, user.name, customerId, customerName);
+      if (!roomRes.success || !roomRes.chatId) throw new Error("Failed to create chat");
+      
+      await ChatService.sendMessage(
+        roomRes.chatId,
+        user.id,
+        user.name,
+        `Halo ${customerName}, saya menghubungi Anda terkait pesanan ${orderId}.`,
+        customerId
+      );
+      
+      router.push('/vendor-dashboard/chat');
+    } catch (err) {
+      console.error(err);
+      alert("Gagal memulai chat dengan pelanggan.");
+      setCreatingChatId(null);
     }
   };
 
@@ -108,7 +135,7 @@ export default function BookingsManagementPage() {
           {filtered.map(booking => (
             <div key={booking.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:border-primary/30 transition-colors">
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b bg-muted/30">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-6 py-4 border-b bg-muted/30 gap-2">
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-mono text-muted-foreground">{booking.id}</span>
                   {getStatusBadge(booking.status as OrderStatus)}
@@ -144,6 +171,24 @@ export default function BookingsManagementPage() {
                       <p className="text-sm text-muted-foreground">{booking.time} WIB</p>
                     </div>
                   </div>
+                  {booking.customerPhone && (
+                    <div className="flex items-start gap-2">
+                      <Phone className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">No. HP</p>
+                        <p className="font-semibold text-sm">{booking.customerPhone}</p>
+                      </div>
+                    </div>
+                  )}
+                  {booking.customerAddress && (
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Alamat Lengkap</p>
+                        <p className="font-semibold text-sm">{booking.customerAddress}</p>
+                      </div>
+                    </div>
+                  )}
                   {booking.note && (
                     <div className="flex items-start gap-2">
                       <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
@@ -155,13 +200,12 @@ export default function BookingsManagementPage() {
                   )}
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 justify-end border-t pt-4">
+                <div className="flex flex-wrap gap-2 justify-end border-t pt-4">
                   {booking.status === 'pending' && (
                     <>
                       <Button
                         size="sm"
-                        className="rounded-full bg-success hover:bg-success/90 text-white"
+                        className="rounded-full bg-green-600 hover:bg-green-700 text-white"
                         onClick={() => handleUpdateStatus(booking.id, 'confirmed')}
                       >
                         <CheckCircle2 className="w-4 h-4 mr-1" /> Terima Pesanan
@@ -179,14 +223,24 @@ export default function BookingsManagementPage() {
                   {booking.status === 'confirmed' && (
                     <Button
                       size="sm"
-                      className="rounded-full"
+                      className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
                       onClick={() => handleUpdateStatus(booking.id, 'completed')}
                     >
-                      <CheckCheck className="w-4 h-4 mr-1" /> Tandai Selesai
+                      <CheckCheck className="w-4 h-4 mr-1" /> Selesaikan Pesanan
                     </Button>
                   )}
-                  {(booking.status === 'completed' || booking.status === 'cancelled') && (
-                    <span className="text-xs text-muted-foreground self-center">Pesanan sudah final.</span>
+                  
+                  {booking.status !== 'cancelled' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full text-foreground hover:bg-muted"
+                      onClick={() => handleChatClient(booking.customerId, booking.customerName, booking.id)}
+                      disabled={creatingChatId === booking.id}
+                    >
+                      <MessageSquare className="w-4 h-4 mr-1" /> 
+                      {creatingChatId === booking.id ? "Membuka..." : "Chat Pelanggan"}
+                    </Button>
                   )}
                 </div>
               </div>

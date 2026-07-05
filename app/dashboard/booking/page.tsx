@@ -8,12 +8,18 @@ import { Clock, Calendar, CheckCircle2, XCircle, CheckCheck, ChevronRight, Packa
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { Star } from "lucide-react";
 
 export default function BookingHistoryPage() {
   const user = useAuthStore(state => state.user);
   const [bookings, setBookings] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+
+  const [ratingOrder, setRatingOrder] = useState<Order | null>(null);
+  const [ratingValue, setRatingValue] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -33,6 +39,27 @@ export default function BookingHistoryPage() {
       setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' as OrderStatus } : b));
     } catch {
       alert("Gagal membatalkan pesanan.");
+    }
+  };
+
+  const handleSubmitRating = async () => {
+    if (!ratingOrder) return;
+    setSubmittingRating(true);
+    try {
+      const res = await OrderService.addRatingToOrder(ratingOrder.id, ratingValue, reviewText);
+      if (res.success) {
+        setBookings(prev => prev.map(b => b.id === ratingOrder.id ? { ...b, rating: ratingValue, review: reviewText } : b));
+        setRatingOrder(null);
+        setRatingValue(5);
+        setReviewText("");
+        alert("Terima kasih atas ulasan Anda!");
+      } else {
+        alert("Gagal mengirim ulasan.");
+      }
+    } catch {
+      alert("Terjadi kesalahan.");
+    } finally {
+      setSubmittingRating(false);
     }
   };
 
@@ -137,16 +164,67 @@ export default function BookingHistoryPage() {
                         Batalkan
                       </Button>
                     )}
-                    <Link href={`/vendors/${booking.vendorId}`}>
-                      <Button size="sm" variant="outline" className="rounded-full text-xs">
-                        Lihat Vendor <ChevronRight className="w-3 h-3 ml-1" />
+                    {booking.status === 'completed' && !booking.rating && (
+                      <Button 
+                        size="sm" 
+                        onClick={() => setRatingOrder(booking)} 
+                        className="rounded-full text-xs"
+                      >
+                        <Star className="w-3 h-3 mr-1" /> Beri Rating
                       </Button>
-                    </Link>
+                    )}
+                    {booking.rating && (
+                      <div className="flex items-center gap-1 text-xs font-bold text-amber-500 bg-amber-50 px-2 py-1.5 rounded-full border border-amber-200">
+                        <Star className="w-3 h-3 fill-amber-500" /> {booking.rating}
+                      </div>
+                    )}
+                    {booking.status !== 'completed' && (
+                      <Link href={`/vendors/${booking.vendorId}`}>
+                        <Button size="sm" variant="outline" className="rounded-full text-xs">
+                          Lihat Vendor <ChevronRight className="w-3 h-3 ml-1" />
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Rating Modal */}
+      {ratingOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-background rounded-3xl p-6 w-full max-w-md shadow-xl animate-in zoom-in-95 duration-200">
+            <h3 className="font-bold text-xl mb-1">Beri Nilai Vendor</h3>
+            <p className="text-sm text-muted-foreground mb-6">Bagaimana pengalaman Anda menggunakan layanan {ratingOrder.vendorName}?</p>
+            
+            <div className="flex justify-center gap-2 mb-6">
+              {[1, 2, 3, 4, 5].map(star => (
+                <button 
+                  key={star} 
+                  onClick={() => setRatingValue(star)}
+                  className="transition-transform hover:scale-110 active:scale-95"
+                >
+                  <Star className={`w-10 h-10 ${ratingValue >= star ? 'fill-amber-400 text-amber-400' : 'text-muted'}`} />
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              className="w-full p-4 border rounded-2xl bg-muted/30 focus:ring-2 focus:ring-primary focus:outline-none resize-none mb-6 text-sm"
+              placeholder="Tulis ulasan pengalaman Anda (opsional)..."
+              rows={4}
+              value={reviewText}
+              onChange={(e) => setReviewText(e.target.value)}
+            />
+
+            <div className="flex justify-end gap-3">
+              <Button variant="ghost" onClick={() => setRatingOrder(null)} className="rounded-full">Batal</Button>
+              <Button onClick={handleSubmitRating} disabled={submittingRating} className="rounded-full px-8">Kirim Ulasan</Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

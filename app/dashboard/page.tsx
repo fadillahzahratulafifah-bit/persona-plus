@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { User, Mail, Phone, MapPin } from "lucide-react";
 import Image from "next/image";
 import { useAuthStore } from "@/store/auth";
+import { db } from "@/lib/firebase";
+import { doc, updateDoc } from "firebase/firestore";
 
 export default function CustomerProfilePage() {
   const user = useAuthStore(state => state.user);

@@ -166,4 +166,17 @@ export class DbService {
       return { success: false, data: [], error: error.message };
     }
   }
+
+  /**
+   * Update an existing service/costume
+   */
+  static async updateService(serviceId: string, data: Partial<VendorServiceItem>): Promise<{ success: boolean; error?: string }> {
+    try {
+      await updateDoc(doc(db, "services", serviceId), data);
+      return { success: true };
+    } catch (error: any) {
+      console.error("Error updating service:", error);
+      return { success: false, error: error.message };
+    }
+  }
 }

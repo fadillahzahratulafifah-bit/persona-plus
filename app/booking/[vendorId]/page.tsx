@@ -26,6 +26,8 @@ export default function BookingPage({ params: paramsPromise }: { params: Promise
   const [selectedService, setSelectedService] = useState<VendorServiceItem | null>(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Transfer BCA");
 
@@ -73,8 +75,8 @@ export default function BookingPage({ params: paramsPromise }: { params: Promise
       router.push("/login");
       return;
     }
-    if (!selectedService || !date || !time) {
-      alert("Lengkapi semua data booking terlebih dahulu.");
+    if (!selectedService || !date || !time || !phone || !address) {
+      alert("Lengkapi semua data booking terlebih dahulu, termasuk No HP dan Alamat.");
       return;
     }
 
@@ -88,8 +90,11 @@ export default function BookingPage({ params: paramsPromise }: { params: Promise
       serviceName: selectedService.name,
       date,
       time,
+      customerPhone: phone,
+      customerAddress: address,
       total: selectedService.price,
       note,
+      paymentMethod,
     });
 
     if (result.success && result.orderId) {
@@ -271,23 +276,52 @@ export default function BookingPage({ params: paramsPromise }: { params: Promise
                 </div>
               )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" /> Catatan untuk Vendor <span className="text-muted-foreground font-normal">(opsional)</span>
-                </label>
-                <textarea
-                  className="w-full p-3 border rounded-xl bg-background min-h-[100px] focus:ring-2 focus:ring-primary focus:outline-none text-sm resize-none"
-                  placeholder="Misal: Alamat detail, warna tema, request khusus, dll..."
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    No. WhatsApp / HP <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    className="w-full p-3 border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none text-sm"
+                    placeholder="Contoh: 081234567890"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    Alamat Lengkap <span className="text-destructive">*</span>
+                  </label>
+                  <textarea
+                    className="w-full p-3 border rounded-xl bg-background min-h-[80px] focus:ring-2 focus:ring-primary focus:outline-none text-sm resize-none"
+                    placeholder="Alamat acara / pengiriman kostum..."
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4" /> Catatan Tambahan <span className="text-muted-foreground font-normal">(opsional)</span>
+                  </label>
+                  <textarea
+                    className="w-full p-3 border rounded-xl bg-background min-h-[80px] focus:ring-2 focus:ring-primary focus:outline-none text-sm resize-none"
+                    placeholder="Misal: Warna tema, request khusus, dll..."
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="pt-4 flex justify-between">
                 <Button variant="ghost" onClick={() => setStep(1)} className="rounded-full">
                   <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
                 </Button>
-                <Button onClick={() => setStep(3)} size="lg" className="rounded-full px-8">
+                <Button onClick={() => setStep(3)} disabled={!phone || !address} size="lg" className="rounded-full px-8">
                   Lanjutkan ke Pembayaran <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>

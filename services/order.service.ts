@@ -7,6 +7,8 @@ export interface Order {
   id: string;
   customerId: string;
   customerName: string;
+  customerPhone?: string;
+  customerAddress?: string;
   vendorId: string;
   vendorName: string;
   serviceName: string;
@@ -16,6 +18,8 @@ export interface Order {
   total: string;
   paymentMethod?: string;
   status: OrderStatus;
+  rating?: number;
+  review?: string;
   createdAt: string;
 }
 
@@ -126,6 +130,76 @@ export class OrderService {
       return { success: true, data: orders };
     } catch (error: any) {
       return { success: false, data: [], error: error.message };
+    }
+  }
+
+  /**
+   * Update order status
+   */
+  static async updateOrderStatus(orderId: string, status: OrderStatus): Promise<{ success: boolean, error?: string }> {
+    try {
+      const { updateDoc, getDoc } = await import("firebase/firestore");
+      
+      await updateDoc(doc(db, "orders", orderId), { status });
+      
+      // If completed, increment vendor ordersCount
+      if (status === 'completed') {
+        const orderSnap = await getDoc(doc(db, "orders", orderId));
+        if (orderSnap.exists()) {
+          const vendorId = orderSnap.data().vendorId;
+          const vendorRef = doc(db, "users", vendorId);
+          const vendorSnap = await getDoc(vendorRef);
+          
+          if (vendorSnap.exists()) {
+            const currentOrdersCount = vendorSnap.data().ordersCount || 0;
+            await updateDoc(vendorRef, { ordersCount: currentOrdersCount + 1 });
+          }
+        }
+      }
+      
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Add rating to order
+   */
+  static async addRatingToOrder(orderId: string, rating: number, review: string): Promise<{ success: boolean, error?: string }> {
+    try {
+      const { updateDoc, getDoc } = await import("firebase/firestore");
+      
+      await updateDoc(doc(db, "orders", orderId), { rating, review });
+      
+      // Update vendor rating average
+      const orderSnap = await getDoc(doc(db, "orders", orderId));
+      if (orderSnap.exists()) {
+        const vendorId = orderSnap.data().vendorId;
+        const vendorRef = doc(db, "users", vendorId);
+        const vendorSnap = await getDoc(vendorRef);
+        
+        if (vendorSnap.exists()) {
+          const vData = vendorSnap.data();
+          const currentReviewsCount = vData.reviewsCount || 0;
+          const currentRating = vData.rating || 0;
+          
+          const newReviewsCount = currentReviewsCount + 1;
+          const newRating = ((currentRating * currentReviewsCount) + rating) / newReviewsCount;
+          
+          // Round to 1 decimal place
+          const roundedRating = Math.round(newRating * 10) / 10;
+          
+          await updateDoc(vendorRef, { 
+            rating: roundedRating, 
+            reviewsCount: newReviewsCount 
+          });
+        }
+      }
+      
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
     }
   }
 }

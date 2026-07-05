@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth";
 import { DbService } from "@/services/db.service";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { Save, UploadCloud } from "lucide-react";
+import { CldUploadWidget, CldImage } from "next-cloudinary";
 
 export default function VendorSettingsPage() {
   const user = useAuthStore(state => state.user);
@@ -16,6 +17,7 @@ export default function VendorSettingsPage() {
     category: "",
     location: "",
     description: "",
+    image: "",
   });
 
   useEffect(() => {
@@ -27,6 +29,7 @@ export default function VendorSettingsPage() {
             category: res.data.category || "",
             location: res.data.location || "",
             description: res.data.description || "",
+            image: res.data.image || "",
           });
         }
         setLoading(false);
@@ -68,18 +71,43 @@ export default function VendorSettingsPage() {
 
       <div className="bg-card border rounded-2xl p-6 md:p-8 shadow-sm">
         <form onSubmit={handleSave} className="space-y-6">
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Nama Bisnis / Toko</label>
-            <input 
-              type="text" 
-              name="name"
-              value={formData.name} 
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
-              placeholder="Contoh: KL Makeup Studio" 
-              required 
-            />
+
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            <div className="shrink-0 flex flex-col gap-3">
+              <label className="text-sm font-medium">Foto Profil Bisnis</label>
+              <div className="w-32 h-32 rounded-2xl overflow-hidden bg-muted border flex items-center justify-center relative">
+                {formData.image ? (
+                  <CldImage src={formData.image} alt="Profile" fill className="object-cover" />
+                ) : (
+                  <span className="text-muted-foreground text-xs text-center p-2">Belum ada foto</span>
+                )}
+              </div>
+              <CldUploadWidget 
+                uploadPreset="ml_default"
+                onSuccess={(result: any) => {
+                  setFormData(prev => ({ ...prev, image: result.info.secure_url }));
+                }}
+              >
+                {({ open }) => (
+                  <Button type="button" variant="outline" size="sm" onClick={() => open()} className="w-full">
+                    <UploadCloud className="w-4 h-4 mr-2" /> Unggah
+                  </Button>
+                )}
+              </CldUploadWidget>
+            </div>
+            
+            <div className="flex-1 space-y-2 w-full">
+              <label className="text-sm font-medium">Nama Bisnis / Toko</label>
+              <input 
+                type="text" 
+                name="name"
+                value={formData.name} 
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
+                placeholder="Contoh: KL Makeup Studio" 
+                required 
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

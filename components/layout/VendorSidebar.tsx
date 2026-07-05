@@ -29,7 +29,7 @@ export default function VendorSidebar() {
   ];
 
   return (
-    <div className="w-64 bg-card border-r h-full flex flex-col fixed left-0 top-0 bottom-0 z-40">
+    <div className="w-64 bg-card border-r flex flex-col fixed left-0 top-20 bottom-0 z-40">
       <div className="p-6 border-b flex flex-col gap-2">
         <Link href="/" className="relative flex items-center">
           <div className="dark:hidden">

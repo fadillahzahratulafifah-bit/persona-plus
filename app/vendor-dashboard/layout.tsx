@@ -27,7 +27,7 @@ export default function VendorDashboardLayout({
   }, [user]);
 
   return (
-    <div className="min-h-screen bg-muted/30 pt-[72px]">
+    <div className="min-h-screen bg-muted/30">
       <VendorSidebar />
       
       <div className="pl-64 flex flex-col min-h-screen">

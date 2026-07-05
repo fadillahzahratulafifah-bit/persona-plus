@@ -138,7 +138,7 @@ export default function Home() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {VENDORS.map((vendor, i) => (
-              <div key={i} className="bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group border">
+              <Link href={`/vendors/${vendor.slug}`} key={i} className="bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group border block">
                 <div className="relative h-48 w-full overflow-hidden">
                   <Image 
                     src={vendor.image} 
@@ -164,7 +164,7 @@ export default function Home() {
                     <Button size="sm" variant="outline" className="rounded-full">Lihat</Button>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -219,6 +219,7 @@ const CATEGORIES = [
 const VENDORS = [
   {
     name: "KL Makeup Studio",
+    slug: "kl-makeup-studio",
     image: "/assets/KL.Makeup Wisuda.webp",
     rating: "4.9",
     location: "Jakarta Selatan",
@@ -227,6 +228,7 @@ const VENDORS = [
   },
   {
     name: "Sakura Cosplay",
+    slug: "sakura-cosplay",
     image: "/assets/KL.Sewa Kostum.webp",
     rating: "4.8",
     location: "Bandung",
@@ -235,6 +237,7 @@ const VENDORS = [
   },
   {
     name: "Disney Dreams",
+    slug: "disney-dreams",
     image: "/assets/KLMakeup Disney.webp",
     rating: "5.0",
     location: "Tangerang",
@@ -243,6 +246,7 @@ const VENDORS = [
   },
   {
     name: "K-Style Beauty",
+    slug: "k-style-beauty",
     image: "/assets/KL.Makeup K-Pop.webp",
     rating: "4.7",
     location: "Jakarta Barat",

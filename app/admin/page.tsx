@@ -7,8 +7,8 @@ import { DbService } from "@/services/db.service";
 import { OrderService } from "@/services/order.service";
 import { ChatService, ChatRoom, ChatMessage } from "@/services/chat.service";
 import { db } from "@/lib/firebase";
-import { doc, updateDoc } from "firebase/firestore";
-import { Users, ShoppingBag, Store, Shield, Ban, CheckCircle2, MessageCircle, Send } from "lucide-react";
+import { doc, updateDoc, collection, addDoc, getDocs, query, orderBy, deleteDoc } from "firebase/firestore";
+import { Users, ShoppingBag, Store, Shield, Ban, CheckCircle2, MessageCircle, Send, Ticket, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -19,7 +19,7 @@ export default function AdminPage() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"accounts" | "orders" | "support">("accounts");
+  const [tab, setTab] = useState<"accounts" | "orders" | "support" | "vouchers">("accounts");
   // Support chat state
   const [supportRooms, setSupportRooms] = useState<ChatRoom[]>([]);
   const [activeSupportRoom, setActiveSupportRoom] = useState<ChatRoom | null>(null);
@@ -27,6 +27,11 @@ export default function AdminPage() {
   const [replyMsg, setReplyMsg] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
   const supportEndRef = useRef<HTMLDivElement>(null);
+  // Voucher state
+  const [vouchers, setVouchers] = useState<any[]>([]);
+  const [voucherForm, setVoucherForm] = useState({ code: "", title: "", type: "flat", value: "", maxDiscount: "", minPurchase: "", expiresAt: "" });
+  const [creatingVoucher, setCreatingVoucher] = useState(false);
+  const [showVoucherForm, setShowVoucherForm] = useState(false);
 
   useEffect(() => {
     if (loadingAuth) return;
@@ -75,6 +80,50 @@ export default function AdminPage() {
     setReplyMsg("");
     setSendingReply(false);
     ChatService.getUserChats(user.id).then(res => { if (res.success) setSupportRooms(res.data); });
+  };
+
+  // Load vouchers when tab switches
+  useEffect(() => {
+    if (tab === 'vouchers') {
+      getDocs(query(collection(db, "vouchers"), orderBy("createdAt", "desc"))).then(snap => {
+        setVouchers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      });
+    }
+  }, [tab]);
+
+  const handleCreateVoucher = async () => {
+    if (!voucherForm.code || !voucherForm.title || !voucherForm.value) { alert("Isi kode, judul, dan nilai voucher."); return; }
+    setCreatingVoucher(true);
+    await addDoc(collection(db, "vouchers"), {
+      code: voucherForm.code.trim().toUpperCase(),
+      title: voucherForm.title.trim(),
+      type: voucherForm.type, // 'flat' or 'percentage'
+      value: Number(voucherForm.value),
+      ...(voucherForm.maxDiscount ? { maxDiscount: Number(voucherForm.maxDiscount) } : {}),
+      ...(voucherForm.minPurchase ? { minPurchase: Number(voucherForm.minPurchase) } : {}),
+      ...(voucherForm.expiresAt ? { expiresAt: voucherForm.expiresAt } : {}),
+      isActive: true,
+      usageCount: 0,
+      createdAt: new Date().toISOString(),
+    });
+    setVoucherForm({ code: "", title: "", type: "flat", value: "", maxDiscount: "", minPurchase: "", expiresAt: "" });
+    setShowVoucherForm(false);
+    setCreatingVoucher(false);
+    // Reload
+    getDocs(query(collection(db, "vouchers"), orderBy("createdAt", "desc"))).then(snap => {
+      setVouchers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  };
+
+  const handleToggleVoucher = async (id: string, isActive: boolean) => {
+    await updateDoc(doc(db, "vouchers", id), { isActive: !isActive });
+    setVouchers(prev => prev.map(v => v.id === id ? { ...v, isActive: !isActive } : v));
+  };
+
+  const handleDeleteVoucher = async (id: string) => {
+    if (!confirm("Hapus voucher ini?")) return;
+    await deleteDoc(doc(db, "vouchers", id));
+    setVouchers(prev => prev.filter(v => v.id !== id));
   };
 
   const stats = {
@@ -128,6 +177,9 @@ export default function AdminPage() {
           </button>
           <button onClick={() => setTab("orders")} className={`px-5 py-2 rounded-full font-medium text-sm transition-colors ${tab === 'orders' ? 'bg-primary text-primary-foreground' : 'bg-card border hover:bg-muted'}`}>
             Semua Pesanan
+          </button>
+          <button onClick={() => setTab("vouchers")} className={`px-5 py-2 rounded-full font-medium text-sm transition-colors flex items-center gap-2 ${tab === 'vouchers' ? 'bg-primary text-primary-foreground' : 'bg-card border hover:bg-muted'}`}>
+            <Ticket className="w-4 h-4" /> Kelola Voucher
           </button>
           <button onClick={() => setTab("support")} className={`px-5 py-2 rounded-full font-medium text-sm transition-colors flex items-center gap-2 ${tab === 'support' ? 'bg-primary text-primary-foreground' : 'bg-card border hover:bg-muted'}`}>
             <MessageCircle className="w-4 h-4" /> Live Chat Support
@@ -314,6 +366,109 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Vouchers Section */}
+        {tab === 'vouchers' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center bg-card p-6 border rounded-2xl shadow-sm">
+              <div>
+                <h2 className="text-lg font-bold">Daftar Voucher & Promo</h2>
+                <p className="text-sm text-muted-foreground">Buat dan kelola kode voucher untuk diskon pengguna.</p>
+              </div>
+              <Button onClick={() => setShowVoucherForm(!showVoucherForm)} className="rounded-full">
+                <Plus className="w-4 h-4 mr-2" /> Buat Voucher Baru
+              </Button>
+            </div>
+
+            {showVoucherForm && (
+              <div className="bg-card p-6 border rounded-2xl shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+                <h3 className="font-bold mb-4 border-b pb-2">Buat Voucher Baru</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Kode Voucher <span className="text-destructive">*</span></label>
+                    <input type="text" value={voucherForm.code} onChange={e => setVoucherForm({...voucherForm, code: e.target.value.toUpperCase()})} placeholder="Contoh: PROMO2026" className="w-full px-4 py-2 border rounded-xl bg-background font-mono text-sm uppercase" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Judul/Deskripsi Singkat <span className="text-destructive">*</span></label>
+                    <input type="text" value={voucherForm.title} onChange={e => setVoucherForm({...voucherForm, title: e.target.value})} placeholder="Contoh: Diskon Kemerdekaan" className="w-full px-4 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Tipe Diskon</label>
+                    <select value={voucherForm.type} onChange={e => setVoucherForm({...voucherForm, type: e.target.value})} className="w-full px-4 py-2 border rounded-xl bg-background text-sm">
+                      <option value="flat">Potongan Harga Flat (Rp)</option>
+                      <option value="percentage">Persentase (%)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Nilai Diskon <span className="text-destructive">*</span></label>
+                    <input type="number" value={voucherForm.value} onChange={e => setVoucherForm({...voucherForm, value: e.target.value})} placeholder={voucherForm.type === 'flat' ? 'Contoh: 20000' : 'Contoh: 10'} className="w-full px-4 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+                  {voucherForm.type === 'percentage' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Maksimal Diskon (Rp)</label>
+                      <input type="number" value={voucherForm.maxDiscount} onChange={e => setVoucherForm({...voucherForm, maxDiscount: e.target.value})} placeholder="Opsional. Contoh: 50000" className="w-full px-4 py-2 border rounded-xl bg-background text-sm" />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Minimum Belanja (Rp)</label>
+                    <input type="number" value={voucherForm.minPurchase} onChange={e => setVoucherForm({...voucherForm, minPurchase: e.target.value})} placeholder="Opsional. Contoh: 100000" className="w-full px-4 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Berlaku Hingga</label>
+                    <input type="date" value={voucherForm.expiresAt} onChange={e => setVoucherForm({...voucherForm, expiresAt: e.target.value})} className="w-full px-4 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
+                  <Button variant="ghost" onClick={() => setShowVoucherForm(false)} className="rounded-full">Batal</Button>
+                  <Button onClick={handleCreateVoucher} disabled={creatingVoucher} className="rounded-full">{creatingVoucher ? 'Menyimpan...' : 'Simpan Voucher'}</Button>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {vouchers.length === 0 ? (
+                <div className="col-span-full text-center p-8 border border-dashed rounded-2xl text-muted-foreground">Belum ada voucher yang dibuat.</div>
+              ) : vouchers.map(v => {
+                const isExpired = v.expiresAt && new Date(v.expiresAt) < new Date();
+                const statusStr = !v.isActive ? 'Nonaktif' : isExpired ? 'Kadaluarsa' : 'Aktif';
+                return (
+                  <div key={v.id} className={`bg-card border rounded-2xl p-5 shadow-sm relative overflow-hidden ${!v.isActive || isExpired ? 'opacity-70 bg-muted/30' : ''}`}>
+                    <div className={`absolute top-0 right-0 px-3 py-1 text-[10px] font-bold rounded-bl-xl ${statusStr === 'Aktif' ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground border-l border-b'}`}>{statusStr}</div>
+                    
+                    <div className="flex items-center gap-3 mb-4 mt-2">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${v.isActive ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                        <Ticket className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-base leading-none">{v.code}</h4>
+                        <p className="text-xs text-muted-foreground mt-1">{v.title}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1 mb-6 text-sm">
+                      <p><span className="text-muted-foreground inline-block w-24">Diskon:</span> <strong className="text-primary">{v.type === 'percentage' ? `${v.value}%` : `Rp ${v.value.toLocaleString('id-ID')}`}</strong></p>
+                      {v.maxDiscount && <p><span className="text-muted-foreground inline-block w-24">Maks:</span> Rp {v.maxDiscount.toLocaleString('id-ID')}</p>}
+                      {v.minPurchase && <p><span className="text-muted-foreground inline-block w-24">Min Belanja:</span> Rp {v.minPurchase.toLocaleString('id-ID')}</p>}
+                      {v.expiresAt && <p><span className="text-muted-foreground inline-block w-24">Expired:</span> {new Date(v.expiresAt).toLocaleDateString('id-ID')}</p>}
+                    </div>
+
+                    <div className="flex justify-between items-center border-t pt-4">
+                      <span className="text-xs text-muted-foreground">Digunakan: {v.usageCount || 0}x</span>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleToggleVoucher(v.id, v.isActive)} className="text-xs h-8 rounded-full">
+                          {v.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteVoucher(v.id)} className="h-8 w-8 text-destructive hover:bg-destructive/10">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

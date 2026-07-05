@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import { DbService, VendorServiceItem } from "@/services/db.service";
 import { OrderService } from "@/services/order.service";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, doc, updateDoc, increment } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, ChevronRight, Calendar as CalendarIcon, Clock, ArrowLeft, User, MessageSquare } from "lucide-react";
+import { CheckCircle2, ChevronRight, Calendar as CalendarIcon, Clock, ArrowLeft, User, MessageSquare, Ticket, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function BookingPage({ params: paramsPromise }: { params: Promise<{ vendorId: string }> }) {
@@ -30,6 +32,11 @@ export default function BookingPage({ params: paramsPromise }: { params: Promise
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Transfer BCA");
+  // Voucher state
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
+  const [voucherError, setVoucherError] = useState("");
 
   const user = useAuthStore(state => state.user);
 
@@ -69,6 +76,43 @@ export default function BookingPage({ params: paramsPromise }: { params: Promise
     return parseInt(priceStr.replace(/[^0-9]/g, "") || "0");
   };
 
+  const getDiscountAmount = () => {
+    if (!appliedVoucher || !selectedService) return 0;
+    const base = parsePrice(selectedService.price);
+    if (appliedVoucher.type === 'percentage') {
+      const disc = Math.round(base * appliedVoucher.value / 100);
+      return appliedVoucher.maxDiscount ? Math.min(disc, appliedVoucher.maxDiscount) : disc;
+    }
+    return appliedVoucher.value; // flat discount
+  };
+
+  const getFinalTotal = () => {
+    if (!selectedService) return 0;
+    return Math.max(0, parsePrice(selectedService.price) - getDiscountAmount());
+  };
+
+  const formatRupiah = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) return;
+    setVoucherLoading(true);
+    setVoucherError("");
+    setAppliedVoucher(null);
+    try {
+      const q = query(collection(db, "vouchers"), where("code", "==", voucherCode.trim().toUpperCase()), where("isActive", "==", true));
+      const snap = await getDocs(q);
+      if (snap.empty) { setVoucherError("Kode voucher tidak valid atau sudah tidak aktif."); setVoucherLoading(false); return; }
+      const vData = { id: snap.docs[0].id, ...snap.docs[0].data() } as any;
+      // Check expiry
+      if (vData.expiresAt && new Date(vData.expiresAt) < new Date()) { setVoucherError("Voucher sudah kadaluarsa."); setVoucherLoading(false); return; }
+      // Check min purchase
+      const base = selectedService ? parsePrice(selectedService.price) : 0;
+      if (vData.minPurchase && base < vData.minPurchase) { setVoucherError(`Minimum belanja ${formatRupiah(vData.minPurchase)} untuk voucher ini.`); setVoucherLoading(false); return; }
+      setAppliedVoucher(vData);
+    } catch { setVoucherError("Gagal memvalidasi voucher."); }
+    setVoucherLoading(false);
+  };
+
   const handleConfirmPayment = async () => {
     if (!user) {
       alert("Harap login terlebih dahulu.");
@@ -82,6 +126,7 @@ export default function BookingPage({ params: paramsPromise }: { params: Promise
 
     setProcessing(true);
 
+    const finalTotal = getFinalTotal();
     const result = await OrderService.createOrder({
       customerId: user.id,
       customerName: user.name,
@@ -92,9 +137,10 @@ export default function BookingPage({ params: paramsPromise }: { params: Promise
       time,
       customerPhone: phone,
       customerAddress: address,
-      total: selectedService.price,
+      total: appliedVoucher ? formatRupiah(finalTotal) : selectedService.price,
       note,
       paymentMethod,
+      ...(appliedVoucher ? { voucherCode: appliedVoucher.code, discountAmount: getDiscountAmount() } : {}),
     });
 
     if (result.success && result.orderId) {
@@ -360,6 +406,42 @@ export default function BookingPage({ params: paramsPromise }: { params: Promise
                 </div>
               )}
 
+              {/* Voucher Input */}
+              <div className="border rounded-2xl p-5 space-y-3">
+                <h4 className="font-semibold flex items-center gap-2 text-sm">
+                  <Ticket className="w-4 h-4 text-primary" /> Kode Voucher / Promo
+                </h4>
+                {appliedVoucher ? (
+                  <div className="flex items-center justify-between bg-success/5 border border-success/30 rounded-xl px-4 py-3">
+                    <div>
+                      <p className="font-bold text-success text-sm">{appliedVoucher.code} — {appliedVoucher.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Hemat {appliedVoucher.type === 'percentage' ? `${appliedVoucher.value}%` : formatRupiah(appliedVoucher.value)}
+                        {appliedVoucher.maxDiscount ? ` (maks. ${formatRupiah(appliedVoucher.maxDiscount)})` : ''}
+                      </p>
+                    </div>
+                    <button onClick={() => { setAppliedVoucher(null); setVoucherCode(""); }} className="text-xs text-destructive hover:underline">Hapus</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={voucherCode}
+                        onChange={e => { setVoucherCode(e.target.value.toUpperCase()); setVoucherError(""); }}
+                        onKeyDown={e => e.key === 'Enter' && handleApplyVoucher()}
+                        placeholder="Masukkan kode voucher..."
+                        className="flex-1 px-4 py-2.5 border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none text-sm font-mono"
+                      />
+                      <Button onClick={handleApplyVoucher} disabled={!voucherCode.trim() || voucherLoading} className="rounded-xl px-5">
+                        {voucherLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Pakai"}
+                      </Button>
+                    </div>
+                    {voucherError && <p className="text-xs text-destructive">{voucherError}</p>}
+                  </>
+                )}
+              </div>
+
               <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 flex gap-3">
                 <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <p className="text-sm text-primary/90">
@@ -411,9 +493,25 @@ export default function BookingPage({ params: paramsPromise }: { params: Promise
                     <p className="font-semibold">{time} WIB</p>
                   </div>
                 )}
-                <div className="border-t pt-3 flex justify-between items-center">
-                  <span className="font-bold">Total</span>
-                  <span className="font-bold text-primary text-base">{selectedService.price}</span>
+                <div className="border-t pt-3 space-y-1.5">
+                  {appliedVoucher && (
+                    <>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Harga Asli</span>
+                        <span className="line-through text-muted-foreground">{selectedService.price}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-success">Diskon Voucher</span>
+                        <span className="text-success font-semibold">-{formatRupiah(getDiscountAmount())}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="font-bold">Total</span>
+                    <span className="font-bold text-primary text-base">
+                      {appliedVoucher ? formatRupiah(getFinalTotal()) : selectedService.price}
+                    </span>
+                  </div>
                 </div>
               </div>
             ) : (

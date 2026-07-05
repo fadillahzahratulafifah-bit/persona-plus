@@ -34,7 +34,7 @@ export const MOCK_BLOGS = [
 
 export default function BlogPage() {
   return (
-    <div className="container mx-auto px-4 md:px-6 py-12 animate-in fade-in duration-500">
+    <div className="container mx-auto px-4 md:px-6 pt-28 pb-12 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
         <div className="max-w-2xl">
           <h1 className="text-4xl font-bold font-heading mb-4">Artikel & Inspirasi</h1>

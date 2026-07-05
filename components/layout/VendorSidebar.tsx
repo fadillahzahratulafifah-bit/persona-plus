@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, CalendarCheck, Package, Shirt, Settings, LogOut, Store, MessageSquare } from "lucide-react";
+import { LayoutDashboard, CalendarCheck, Package, Shirt, Settings, LogOut, Store, MessageSquare, Images } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 
 export default function VendorSidebar() {
@@ -20,10 +20,11 @@ export default function VendorSidebar() {
 
   const menu = [
     { name: "Overview", icon: LayoutDashboard, path: "/vendor-dashboard" },
-    { name: "Pesan Masuk", icon: MessageSquare, path: "/vendor-dashboard/chat" },
+    { name: "Pesan", icon: MessageSquare, path: "/vendor-dashboard/chat" },
     { name: "Pesanan Masuk", icon: CalendarCheck, path: "/vendor-dashboard/bookings" },
     { name: "Kelola Layanan", icon: Package, path: "/vendor-dashboard/services" },
     { name: "Kelola Kostum", icon: Shirt, path: "/vendor-dashboard/costumes" },
+    { name: "Portofolio", icon: Images, path: "/vendor-dashboard/portfolio" },
     { name: "Pengaturan", icon: Settings, path: "/vendor-dashboard/settings" },
   ];
 

@@ -37,7 +37,7 @@ export default function HelpCenterPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-12 animate-in fade-in duration-500">
+    <div className="container mx-auto px-4 md:px-6 pt-24 pb-12 animate-in fade-in duration-500">
       
       {/* Header */}
       <div className="bg-primary/5 rounded-3xl p-8 md:p-16 text-center mb-12 border border-primary/10">
@@ -108,33 +108,36 @@ export default function HelpCenterPage() {
             </p>
 
             <div className="space-y-4">
-              <Button className="w-full flex justify-start items-center gap-3 py-6 rounded-2xl" variant="outline">
+              <a href="#" onClick={(e) => { e.preventDefault(); alert('Live chat akan segera tersedia!'); }}
+                className="w-full flex justify-start items-center gap-3 py-6 px-4 rounded-2xl border hover:bg-muted transition-colors cursor-pointer">
                 <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                   <MessageCircle className="w-5 h-5" />
                 </div>
                 <div className="text-left">
                   <p className="font-bold">Live Chat</p>
-                  <p className="text-xs text-muted-foreground">Balasan instan</p>
+                  <p className="text-xs text-muted-foreground">Balas instan via admin</p>
                 </div>
-              </Button>
-              <Button className="w-full flex justify-start items-center gap-3 py-6 rounded-2xl" variant="outline">
-                <div className="w-10 h-10 rounded-full bg-success/10 text-success flex items-center justify-center">
+              </a>
+              <a href="tel:085173458645"
+                className="w-full flex justify-start items-center gap-3 py-6 px-4 rounded-2xl border hover:bg-muted transition-colors">
+                <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
                   <PhoneCall className="w-5 h-5" />
                 </div>
                 <div className="text-left">
                   <p className="font-bold">Telepon</p>
-                  <p className="text-xs text-muted-foreground">08:00 - 17:00 WIB</p>
+                  <p className="text-xs text-muted-foreground">085173458645 (08:00-17:00 WIB)</p>
                 </div>
-              </Button>
-              <Button className="w-full flex justify-start items-center gap-3 py-6 rounded-2xl" variant="outline">
-                <div className="w-10 h-10 rounded-full bg-warning/10 text-warning flex items-center justify-center">
+              </a>
+              <a href="mailto:help.personal@gmail.com"
+                className="w-full flex justify-start items-center gap-3 py-6 px-4 rounded-2xl border hover:bg-muted transition-colors">
+                <div className="w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center">
                   <Mail className="w-5 h-5" />
                 </div>
                 <div className="text-left">
                   <p className="font-bold">Email</p>
-                  <p className="text-xs text-muted-foreground">support@persona.com</p>
+                  <p className="text-xs text-muted-foreground">help.personal@gmail.com</p>
                 </div>
-              </Button>
+              </a>
             </div>
           </div>
         </div>

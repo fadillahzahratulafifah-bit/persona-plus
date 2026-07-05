@@ -15,6 +15,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevMsgCount = useRef<number>(0);
 
   useEffect(() => {
     if (user) {
@@ -25,13 +26,19 @@ export default function ChatPage() {
     }
   }, [user]);
 
-  // Listen to messages when a room is active
+  // Only auto-scroll when new messages arrive, not on typing
+  useEffect(() => {
+    if (messages.length > prevMsgCount.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    prevMsgCount.current = messages.length;
+  }, [messages]);
+
   useEffect(() => {
     if (!activeRoom) return;
     ChatService.markAsRead(activeRoom.id, user!.id);
     const unsubscribe = ChatService.listenToMessages(activeRoom.id, msgs => {
       setMessages(msgs);
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     });
     return () => unsubscribe();
   }, [activeRoom, user]);

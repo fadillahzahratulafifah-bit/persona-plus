@@ -40,13 +40,17 @@ export default function VendorCard({ vendor }: { vendor: Vendor }) {
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
           <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1 text-xs font-bold text-foreground">
-            <Star className="w-3 h-3 fill-warning text-warning" /> {vendor.rating}
+            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+            <span>{vendor.rating || '0'}</span>
+            {vendor.reviewsCount > 0 && (
+              <span className="text-muted-foreground font-normal">({vendor.reviewsCount})</span>
+            )}
           </div>
           <button 
             onClick={toggleWishlist}
             className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white transition-colors"
           >
-            <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-accent text-accent' : 'text-muted-foreground'}`} />
+            <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
           </button>
         </div>
         <div className="p-5 flex flex-col flex-grow">
@@ -54,7 +58,10 @@ export default function VendorCard({ vendor }: { vendor: Vendor }) {
             <MapPin className="w-3 h-3" /> {vendor.location}
           </div>
           <h3 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">{vendor.name}</h3>
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-1">{vendor.category}</p>
+          <p className="text-sm text-muted-foreground mb-3 line-clamp-1">{vendor.category}</p>
+          {(vendor as any).ordersCount > 0 && (
+            <p className="text-xs text-muted-foreground mb-2">✅ {(vendor as any).ordersCount}+ pesanan selesai</p>
+          )}
           <div className="flex justify-between items-end pt-4 border-t mt-auto">
             <div>
               <p className="text-xs text-muted-foreground">Mulai dari</p>

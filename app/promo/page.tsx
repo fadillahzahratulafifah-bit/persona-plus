@@ -30,7 +30,7 @@ export default function PromoPage() {
   ];
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-12 animate-in fade-in duration-500">
+    <div className="container mx-auto px-4 md:px-6 pt-24 pb-12 animate-in fade-in duration-500">
       <div className="text-center max-w-2xl mx-auto mb-16">
         <h1 className="text-4xl font-bold font-heading mb-4">Promo Spesial Persona+</h1>
         <p className="text-muted-foreground text-lg">Gunakan kode voucher di bawah ini untuk mendapatkan penawaran terbaik dari layanan vendor favoritmu.</p>

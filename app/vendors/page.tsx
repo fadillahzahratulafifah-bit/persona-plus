@@ -1,23 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { DbService } from "@/services/db.service";
 import VendorCard from "@/components/cards/VendorCard";
 import { Search, MapPin, Filter } from "lucide-react";
 
 export default function VendorsPage() {
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const initialQ = searchParams.get("q") || "";
+  const [query, setQuery] = useState(initialQ);
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Sync query when URL param changes
+  useEffect(() => { setQuery(searchParams.get("q") || ""); }, [searchParams]);
+
   useEffect(() => {
     DbService.getVendors().then(res => {
-      console.log('[VendorsPage] getVendors result:', res);
-      if (res.success) {
-        setVendors(res.data);
-      } else {
-        console.error('[VendorsPage] Error:', res.error);
-      }
+      if (res.success) setVendors(res.data);
       setLoading(false);
     });
   }, []);

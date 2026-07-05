@@ -6,7 +6,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuthStore, UserRole } from "@/store/auth";
-import { Loader2 } from "lucide-react";
+import { auth } from "@/lib/firebase";
+import { sendEmailVerification } from "firebase/auth";
+import { Loader2, CheckCircle } from "lucide-react";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -15,6 +17,8 @@ export default function RegisterPage() {
   const [role, setRole] = useState<UserRole>("customer");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
   const register = useAuthStore(state => state.register);
   const loginWithGoogle = useAuthStore(state => state.loginWithGoogle);
   const router = useRouter();
@@ -32,8 +36,12 @@ export default function RegisterPage() {
     try {
       const user = await register(name, email, password, role);
       if (user) {
-        if (user.role === 'vendor') router.push('/vendor-dashboard');
-        else router.push('/dashboard');
+        // Send email verification
+        if (auth.currentUser) {
+          try { await sendEmailVerification(auth.currentUser); } catch (_) {}
+        }
+        setRegisteredEmail(email);
+        setVerificationSent(true);
       }
     } catch (err: any) {
       setError(err.message);
@@ -59,17 +67,27 @@ export default function RegisterPage() {
   return (
     <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 pt-10">
       <div className="w-full max-w-md bg-card border rounded-3xl p-8 shadow-sm animate-in fade-in zoom-in duration-500">
-        
+
         <div className="flex justify-center mb-8">
           <Link href="/">
-            <div className="dark:hidden">
-              <Image src="/images/LOGO.webp" alt="Persona+" width={280} height={90} className="h-24 w-auto object-contain" />
-            </div>
-            <div className="hidden dark:block">
-              <Image src="/images/Logo White.webp" alt="Persona+" width={280} height={90} className="h-24 w-auto object-contain" />
-            </div>
+            <div className="dark:hidden"><Image src="/images/LOGO.webp" alt="Persona+" width={280} height={90} className="h-20 w-auto object-contain" /></div>
+            <div className="hidden dark:block"><Image src="/images/Logo White.webp" alt="Persona+" width={280} height={90} className="h-20 w-auto object-contain" /></div>
           </Link>
         </div>
+
+        {verificationSent ? (
+          <div className="text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">Verifikasi Email Anda!</h1>
+            <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
+              Link aktivasi telah dikirim ke <strong>{registeredEmail}</strong>. Periksa kotak masuk atau folder spam Anda, lalu klik link untuk mengaktifkan akun.
+            </p>
+            <Link href="/login"><Button className="w-full rounded-full">Lanjut ke Login</Button></Link>
+          </div>
+        ) : (
+          <>
 
         <h1 className="text-2xl font-bold text-center mb-2">Buat Akun Baru</h1>
         <p className="text-muted-foreground text-center mb-6 text-sm">Bergabunglah dengan komunitas kecantikan dan cosplay Persona+.</p>
@@ -151,6 +169,8 @@ export default function RegisterPage() {
         <p className="text-center text-sm text-muted-foreground mt-8">
           Sudah punya akun? <Link href="/login" className="text-primary font-bold hover:underline">Masuk di sini</Link>
         </p>
+        </>
+        )}
       </div>
     </div>
   );

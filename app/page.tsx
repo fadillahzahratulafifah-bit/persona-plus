@@ -1,15 +1,30 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Star, MapPin, ChevronRight, Search } from "lucide-react";
+import { Star, MapPin, ChevronRight, Search, Users, Shield, Award } from "lucide-react";
+import { useState } from "react";
 
 export default function Home() {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [locationQuery, setLocationQuery] = useState("");
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.set("q", searchQuery.trim());
+    if (locationQuery.trim()) params.set("loc", locationQuery.trim());
+    router.push(`/vendors?${params.toString()}`);
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-primary/5 pt-20 min-h-[500px] md:min-h-[600px] flex items-center">
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-secondary/5 to-background pt-16 min-h-[580px] md:min-h-[680px] flex items-center">
         {/* Background Characters */}
-        <div className="absolute inset-0 z-0 opacity-40 md:opacity-100 flex justify-center items-end">
+        <div className="absolute inset-0 z-0 opacity-30 md:opacity-80 flex justify-center items-end">
           <Image 
             src="/assets/no backround.webp" 
             alt="Cosplay Characters" 
@@ -18,28 +33,66 @@ export default function Home() {
             priority
           />
         </div>
+        {/* Gradient overlay for readability */}
+        <div className="absolute inset-0 z-0 bg-gradient-to-r from-background/70 via-background/40 to-transparent md:from-background/60 md:via-background/30 md:to-transparent" />
         
-        <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center md:items-start text-center md:text-left mt-32 md:mt-48 mb-8">
-          
-          <div className="bg-white/80 backdrop-blur-md p-2 rounded-full shadow-2xl flex items-center w-full max-w-2xl mb-8 border border-white/50">
-            <div className="flex-1 flex items-center px-4 border-r border-gray-200">
-              <Search className="h-5 w-5 text-primary mr-2" />
-              <input type="text" placeholder="Cari layanan, vendor, atau kostum..." className="w-full bg-transparent border-none focus:outline-none text-foreground py-2 font-medium" />
+        <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center md:items-start text-center md:text-left py-16 md:py-24">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-primary/20">
+            <Award className="w-3.5 h-3.5" />
+            Platform Makeup & Cosplay #1 di Indonesia
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-heading text-foreground mb-4 leading-tight max-w-2xl">
+            Temukan <span className="text-primary">Makeup Artist</span> & Sewa Kostum Terbaik
+          </h1>
+          <p className="text-lg text-foreground/70 mb-8 max-w-xl">
+            Ratusan vendor profesional MUA, Hair Stylist, dan penyewa kostum anime/cosplay siap melayani acara spesial Anda.
+          </p>
+
+          {/* Search Bar */}
+          <div className="bg-white/90 dark:bg-card/90 backdrop-blur-md p-2 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-center w-full max-w-2xl mb-8 border border-white/50 gap-2 sm:gap-0">
+            <div className="flex-1 flex items-center px-4 sm:border-r border-gray-200 w-full">
+              <Search className="h-5 w-5 text-primary mr-2 shrink-0" />
+              <input type="text" value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                placeholder="Cari layanan, vendor, atau kostum..." 
+                className="w-full bg-transparent border-none focus:outline-none text-foreground py-2 font-medium text-sm" />
             </div>
-            <div className="hidden md:flex flex-1 items-center px-4 border-r border-gray-200">
-              <MapPin className="h-5 w-5 text-primary mr-2" />
-              <input type="text" placeholder="Lokasi" className="w-full bg-transparent border-none focus:outline-none text-foreground py-2 font-medium" />
+            <div className="hidden sm:flex flex-1 items-center px-4">
+              <MapPin className="h-5 w-5 text-primary mr-2 shrink-0" />
+              <input type="text" value={locationQuery}
+                onChange={e => setLocationQuery(e.target.value)}
+                placeholder="Kota / Lokasi" 
+                className="w-full bg-transparent border-none focus:outline-none text-foreground py-2 font-medium text-sm" />
             </div>
-            <Button className="rounded-full bg-primary hover:bg-primary/90 text-white px-8 shadow-lg shadow-primary/30">Cari</Button>
+            <Button onClick={handleSearch} className="rounded-xl bg-primary hover:bg-primary/90 text-white px-6 shadow-lg shadow-primary/30 w-full sm:w-auto shrink-0">Cari Sekarang</Button>
           </div>
           
-          <div className="flex gap-4">
-            <Button size="lg" variant="default" className="rounded-full font-bold shadow-lg shadow-primary/30 px-8">
-              Cari Vendor
-            </Button>
-            <Button size="lg" variant="outline" className="rounded-full bg-white/50 backdrop-blur-sm border-primary/20 text-primary hover:bg-white/80 font-bold px-8 shadow-sm">
-              Jelajahi Layanan
-            </Button>
+          {/* Quick CTA */}
+          <div className="flex flex-wrap gap-3">
+            <Link href="/vendors">
+              <Button size="lg" variant="default" className="rounded-full font-bold shadow-lg shadow-primary/30 px-8">Cari Vendor MUA</Button>
+            </Link>
+            <Link href="/costumes">
+              <Button size="lg" variant="outline" className="rounded-full bg-white/60 dark:bg-card/60 backdrop-blur-sm border-primary/20 text-primary hover:bg-white/80 font-bold px-8 shadow-sm">Sewa Kostum</Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-10 bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {STATS.map((stat, i) => (
+              <div key={i}>
+                <p className="text-3xl font-bold font-heading mb-1">{stat.value}</p>
+                <p className="text-sm text-primary-foreground/80">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -144,6 +197,13 @@ export default function Home() {
     </div>
   );
 }
+
+const STATS = [
+  { value: "500+", label: "Vendor Aktif" },
+  { value: "10.000+", label: "Pelanggan Puas" },
+  { value: "50.000+", label: "Layanan Selesai" },
+  { value: "4.9★", label: "Rating Rata-rata" },
+];
 
 const CATEGORIES = [
   { name: "Wisuda", slug: "makeup-wisuda", icon: "🎓" },
